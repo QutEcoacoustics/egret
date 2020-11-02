@@ -1,4 +1,5 @@
 ﻿using Egret.Cli.Extensions;
+using Egret.Cli.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
@@ -29,9 +30,11 @@ namespace Egret.Cli.Commands
 
 
         public TestCommandOptions Options { get; }
+        public Serializer Serializer { get; }
 
-        public TestCommand(ILogger<TestCommand> logger, ITerminal terminal, TestCommandOptions options)
+        public TestCommand(ILogger<TestCommand> logger, ITerminal terminal, Serializer serializer, TestCommandOptions options)
         {
+            Serializer = serializer;
             Options = options;
             Logger = logger;
             Terminal = terminal;
@@ -48,7 +51,9 @@ namespace Egret.Cli.Commands
 
             Logger.LogDebug("Config: {config}", Options.Configuration);
 
-            YamlDotNet.
+            var config = Serializer.Deserialize(Options.Configuration);
+            Logger.LogDebug("config values:", config);
+
 
             return await Task.FromResult(0);
         }

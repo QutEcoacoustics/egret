@@ -1,0 +1,52 @@
+---
+tools:
+    ap:
+        command: "AP.exe audio2csv {source} {config} {output}"
+        result_pattern: "*.Events.csv"
+    avianz:
+        command: "avianz {source} {config} {output}"
+        result_pattern: ""
+test_suites:
+    boobook:
+        default_label: boobook
+        tool_configs:
+            ap:
+                config: boobook.yml
+            avianz:
+                config: boobook.json
+        cases:
+            - file: "abc.wav"
+              expect_events:
+                  #        a: 1±0.2
+                  #        b: '>1'
+                  #        c: '<1'
+                  #        d: '≥1'
+                  #        e: '≤1'
+                  #        f: 1±ε
+                  #        g: '[1, 2]'
+                  #        h: '(1, 2]'
+                  #        i: '[1, 2)'
+                  #        j: '(1, 2)'
+                  - label: boobook
+                    bounds: [10, 130, 20, 300]
+                  - label: boobook
+                    centroid: [10, 30]
+                    duration: ">1.0"
+                    bandwidth: ">1.0"
+                  - label: powerful_owl
+                    match: false
+                  - condition: 'label.startsWith("boo")'
+            - uri: ecosounds.org/123.wav
+              expect:
+                  # ...
+        include_cases: [geophony]
+
+common_cases:
+    geophony:
+        - file: windy.wav
+          expect:
+              - !no_events
+        - file: rainy.wav
+          expect:
+              - !event_count
+                count: 0

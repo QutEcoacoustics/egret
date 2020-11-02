@@ -15,6 +15,8 @@ using System.CommandLine.Binding;
 using Egret.Cli.Extensions;
 using System.CommandLine.Rendering;
 using Serilog;
+using Egret.Cli.Serialization;
+using Serilog.Configuration;
 
 namespace Egret.Cli
 {
@@ -90,13 +92,17 @@ namespace Egret.Cli
                 {
                     return p.GetRequiredService<IConsole>().GetTerminal(true);
                 });
+
+                services.AddSingleton<Serializer>();
             })
             .UseEgretCommand<TestCommandOptions, TestCommand>("test")
             .UseEgretCommand<WatchCommandOptions, WatchCommand>("watch")
             .UseSerilog((hostingContext, services, loggerConfiguration) =>
             {
+
                 loggerConfiguration
                     .Enrich.FromLogContext()
+                    .MinimumLevel.Debug()
                     .WriteTo.Console();
             });
         }
