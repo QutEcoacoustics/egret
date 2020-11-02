@@ -1,0 +1,23 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"csharp.format.enable": true,
+		"csharp.semanticHighlighting.enabled": true,
+		"omnisharp.enableEditorConfigSupport": true,
+		"omnisharp.enableRoslynAnalyzers": true,
+		"omnisharp.enableImportCompletion": true,
+		"editor.formatOnSave": true
+	},
+	"extensions": {
+		"recommendations": [
+			"ms-dotnettools.csharp",
+			"editorconfig.editorconfig",
+			"jmrog.vscode-nuget-package-manager",
+			"tintoy.msbuild-project-tools"
+		]
+	}
+}
