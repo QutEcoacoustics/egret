@@ -1,0 +1,13 @@
+/* visualize this here: https://bottlecaps.de/rr/ui */
+grammar ::= interval* 
+interval ::= number | tolerance | relation | bounded
+tolerance ::= number "±" number
+relation ::= (">" | "<" | "≥" | "≤") number
+bounded ::= ("[" | "(") number "," number (")" | "]")
+
+number ::= constant | real
+constant ::= "ε" | "∞" | "-∞"
+real ::= pos | neg | zero
+pos ::= digit+ ("." digit+ )?
+neg ::= "-" pos
+digit ::=  [0-9]

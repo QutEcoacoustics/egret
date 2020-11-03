@@ -20,7 +20,7 @@ namespace Egret.Cli.Serialization
                 .WithNamingConvention(UnderscoredNamingConvention.Instance)
                 .WithTagMapping("!no_events", typeof(NoEvents))
                 .WithTagMapping("!event_count", typeof(EventCount))
-
+                .WithTypeConverter(new IntervalTypeConverter())
                 // WithTypeResolver
                 // WithTypeConverter
                 // WithObjectFactory
@@ -62,7 +62,7 @@ namespace Egret.Cli.Serialization
                     foreach (var include in suite.IncludeCases)
                     {
                         // cases are in this file
-                        if (original.CommonCases.TryGetValue(name, out var cases))
+                        if (original.CommonCases.TryGetValue(include, out var cases))
                         {
                             suite.SharedCases.Add(include, cases);
                             continue;

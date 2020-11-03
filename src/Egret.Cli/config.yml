@@ -27,6 +27,8 @@ test_suites:
                   #        h: '(1, 2]'
                   #        i: '[1, 2)'
                   #        j: '(1, 2)'
+                  # ∞
+                  # -∞
                   - label: boobook
                     bounds: [10, 130, 20, 300]
                   - label: boobook

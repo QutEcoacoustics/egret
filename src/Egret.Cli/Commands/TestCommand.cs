@@ -52,7 +52,7 @@ namespace Egret.Cli.Commands
             Logger.LogDebug("Config: {config}", Options.Configuration);
 
             var config = Serializer.Deserialize(Options.Configuration);
-            Logger.LogDebug("config values:", config);
+            Logger.LogDebug("config values: {@config}", config);
 
 
             return await Task.FromResult(0);

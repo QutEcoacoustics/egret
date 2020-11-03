@@ -1,20 +1,61 @@
 using Egret.Cli.Models;
 using System;
+using System.Text;
 using YamlDotNet.Core;
+using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 
 namespace Egret.Cli.Serialization
 {
-    public class BoundsTypeConverter : IYamlTypeConverter
+    // public class BoundsTypeConverter : IYamlTypeConverter
+    // {
+    //     public bool Accepts(Type type)
+    //     {
+    //         return type == typeof(Bounds);
+    //     }
+
+    //     public object ReadYaml(IParser parser, Type type)
+    //     {
+    //         parser.Consume<SequenceStart>();
+
+    //         parser.Consume<Scalar>();
+    //         this.StartSeconds = (Interval)nestedObjectDeserializer.Invoke(typeof(Interval));
+
+    //         parser.Consume<Scalar>();
+    //         this.EndSeconds = (Interval)nestedObjectDeserializer.Invoke(typeof(Interval));
+
+    //         parser.Consume<Scalar>();
+    //         this.LowHertz = (Interval)nestedObjectDeserializer.Invoke(typeof(Interval));
+
+    //         parser.Consume<Scalar>();
+    //         this.HighHertz = (Interval)nestedObjectDeserializer.Invoke(typeof(Interval));
+
+    //         parser.Consume<SequenceEnd>();
+    //     }
+
+    //     public void WriteYaml(IEmitter emitter, object value, Type type)
+    //     {
+    //         throw new NotImplementedException();
+    //     }
+    // }
+
+
+
+    public class IntervalTypeConverter : IYamlTypeConverter
     {
         public bool Accepts(Type type)
         {
-            return type == typeof(Bounds)
+            return type == typeof(Interval);
         }
 
         public object ReadYaml(IParser parser, Type type)
         {
-            var value = parser.
+            var scalar = parser.Consume<Scalar>();
+            var bytes = Encoding.UTF8.GetBytes(scalar.Value);
+            return Interval.FromString(bytes, 0.0001);
+
+
+
         }
 
         public void WriteYaml(IEmitter emitter, object value, Type type)
