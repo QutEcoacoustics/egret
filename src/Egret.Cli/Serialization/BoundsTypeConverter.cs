@@ -1,4 +1,5 @@
 using Egret.Cli.Models;
+using Serilog.Events;
 using System;
 using System.Text;
 using YamlDotNet.Core;
@@ -43,6 +44,13 @@ namespace Egret.Cli.Serialization
 
     public class IntervalTypeConverter : IYamlTypeConverter
     {
+        public double DefaultThreshold { get; }
+        public IntervalTypeConverter(double defaultThreshold)
+        {
+            this.DefaultThreshold = defaultThreshold;
+
+        }
+
         public bool Accepts(Type type)
         {
             return type == typeof(Interval);
@@ -52,15 +60,12 @@ namespace Egret.Cli.Serialization
         {
             var scalar = parser.Consume<Scalar>();
             var bytes = Encoding.UTF8.GetBytes(scalar.Value);
-            return Interval.FromString(bytes, 0.0001);
-
-
-
+            return Interval.FromString(bytes, DefaultThreshold);
         }
 
         public void WriteYaml(IEmitter emitter, object value, Type type)
         {
-            throw new NotImplementedException();
+            emitter.Emit(new Scalar(value.ToString()));
         }
     }
 }

@@ -17,6 +17,14 @@ using System.CommandLine.Rendering;
 using Serilog;
 using Egret.Cli.Serialization;
 using Serilog.Configuration;
+using Microsoft.Extensions.Configuration;
+using Egret.Cli.Processing;
+using Serilog.Sinks.SystemConsole.Themes;
+using System.CommandLine.Help;
+using Serilog.Events;
+using Serilog.Extensions.Logging;
+using Egret.Cli.Hosting;
+using System.Text;
 
 namespace Egret.Cli
 {
@@ -29,13 +37,13 @@ namespace Egret.Cli
 
         static async Task<int> Main(string[] args)
         {
-
-
+            Console.OutputEncoding = Encoding.UTF8;
             return await BuildCommandLine()
                 // https://github.com/dotnet/command-line-api/blob/main/src/System.CommandLine.Hosting/HostingExtensions.cs
-                .UseHost(Host.CreateDefaultBuilder, ConfigureAppHost)
+                .UseHost(Host.CreateDefaultBuilder, HostingSetup.ConfigureAppHost)
                 // https://github.com/dotnet/command-line-api/blob/main/src/System.CommandLine/Builder/CommandLineBuilderExtensions.cs#L257
                 .UseDefaults()
+                //.UseAnsiTerminalWhenAvailable()
                 .Build()
                 .InvokeAsync(args);
         }
@@ -46,6 +54,7 @@ namespace Egret.Cli
 
             var rootCommand = new RootCommand("Egret")
             {
+                // commands
                 new Command("version", description: "get the version of egret"),
                 new Command("test", "Run egret tests")
                 {
@@ -58,9 +67,14 @@ namespace Egret.Cli
                 }
             };
 
-            rootCommand.Handler = CommandHandler.Create<IHost>(Run);
+            // global options
+            rootCommand.AddGlobalOption(new Option<LogLevel>("--log-level", "Enable logging and the log level").WithAlias("-l"));
+            rootCommand.AddGlobalOption(new Option<bool>("--verbose", "Enable logging at the debug level").WithAlias("-v"));
+            rootCommand.AddGlobalOption(new Option<bool>("--very-verbose", "Enable logging at the trace level"));
 
 
+
+            rootCommand.Handler = MainCommand.RunHandler;
 
             var builder = new CommandLineBuilder(rootCommand);
 
@@ -69,43 +83,8 @@ namespace Egret.Cli
         }
 
 
-        private static int Run(IHost host)
-        {
-            var log = host.Services.GetRequiredService<ILogger<Program>>();
-            log.LogDebug("Run main");
 
-            return 0;
-        }
 
-        private static void ConfigureAppHost(IHostBuilder builder)
-        {
-            builder.ConfigureServices(services =>
-            {
-                services.AddSingleton<ConsoleRenderer>(provider =>
-                {
-                    return new ConsoleRenderer(
-                        provider.GetRequiredService<IConsole>(),
-                        OutputMode.Ansi
-                    );
-                });
-                services.AddSingleton<ITerminal>((p) =>
-                {
-                    return p.GetRequiredService<IConsole>().GetTerminal(true);
-                });
-
-                services.AddSingleton<Serializer>();
-            })
-            .UseEgretCommand<TestCommandOptions, TestCommand>("test")
-            .UseEgretCommand<WatchCommandOptions, WatchCommand>("watch")
-            .UseSerilog((hostingContext, services, loggerConfiguration) =>
-            {
-
-                loggerConfiguration
-                    .Enrich.FromLogContext()
-                    .MinimumLevel.Debug()
-                    .WriteTo.Console();
-            });
-        }
 
 
     }

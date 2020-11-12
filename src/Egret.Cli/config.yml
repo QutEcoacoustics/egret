@@ -1,47 +1,125 @@
 ---
+# Egret: a Ecoacoustics Generalized Recognition and Event Tester
+#
+# Tests:
+# Each file that is tested is expected to return results.
+# Results files are loaded based on the `tool`'s `result_pattern` property.
+#
+# Naming and munging:
+# Every result is munged using a list of name aliases to try and find columns/properties
+# that can be used for testing.
+# To see a list of required fields, their definitions, and various alternate acceptable
+# names, run the `munging` command.
+#
+# ```
+# egret.exe munging
+# ```
+#
+# Test types:
+# There are two test types. Event tests look for events. You can specify different
+# ways to find an event by using:
+# - a bounding box (temporal and spectral bounds): `[start, low, end, high]`
+# - a point/centroid (temporal and spectral midpoint): `[start, low]`
+# - temporal range only: `[start, ~, end]`
+#
+#
+# Test values:
+## Numerics:
+# In general any numeric field on a test, as well as all coordinates for events
+# and segments
+# will accept a variety of syntaxes, including:
+# - literal values: `1.0`, `1`, `-1.23`, `0.0023`
+# - exponential notation: `4.56e3`, `-1E-6`
+# - constants: `ε` , `∞` , `-∞`
+# - inequality relations: `>`, `<`, `≥`, `≤`
+# - tolerances: `±`
+# - approximations: `~`, `≈`
+# - intervals: `[x1, x2]`, `(x1, x2]`, `[x1, x2)`, `(x1, x2)`
+#
+# This syntax allows for a wide range of concepts to be encoded in a dense format.
+# We think this density makes large test-sets easy to work with.
+#
+# A formal grammar for this syntax id defined interval.ebnf and can be visualized [here]().
+#
+# However, the easiest method of working with this notation is to just look through
+# the examples.
+#
+## Strings:
+# Strings (text, names, labels) are much simpler. They can either be
+# - a normal string: `hello`, or `"hello"` (quoted) if special characters are used
+# - or a regular expression: `/bo+/`
+#
+# Regular expressions are
+
 tools:
     ap:
-        command: "AP.exe audio2csv {source} {config} {output}"
-        result_pattern: "*.Events.csv"
-    avianz:
-        command: "avianz {source} {config} {output}"
-        result_pattern: ""
+        executable: AnalysisPrograms.exe
+        command: "audio2csv {source} {config} {output} --no-debug"
+        result_pattern: "*.Events.beta.json"
+    # avianz:
+    #   executable: "echo.exe"
+    #   command: "{source} {config} {output} {tempdir}"
+    #   result_pattern: ""
+# A test suite is a named group of test files.
+# It will automatically run each test file against each tool.
 test_suites:
+    # The name of the suite
     boobook:
-        default_label: boobook
+        default_label: NinoxBoobook
         tool_configs:
             ap:
-                config: boobook.yml
+                config: Towsey.NinoxBoobook.yml
             avianz:
                 config: boobook.json
-        cases:
-            - file: "abc.wav"
-              expect_events:
-                  #        a: 1±0.2
-                  #        b: '>1'
-                  #        c: '<1'
-                  #        d: '≥1'
-                  #        e: '≤1'
-                  #        f: 1±ε
-                  #        g: '[1, 2]'
-                  #        h: '(1, 2]'
-                  #        i: '[1, 2)'
-                  #        j: '(1, 2)'
-                  # ∞
-                  # -∞
-                  - label: boobook
-                    bounds: [10, 130, 20, 300]
-                  - label: boobook
-                    centroid: [10, 30]
-                    duration: ">1.0"
-                    bandwidth: ">1.0"
-                  - label: powerful_owl
-                    match: false
-                  - condition: 'label.startsWith("boo")'
-            - uri: ecosounds.org/123.wav
-              expect:
-                  # ...
-        include_cases: [geophony]
+        tests:
+            - file: ..\..\tests\Fixtures\Powerful3AndBoobook0_ksh3_1773_510819_20171109_174311_30_0.wav
+            # expect:
+            #   - segment_with: event_count
+            #     count: 3
+            # expect_events:
+            #   - label: NinoxBoobook
+            #     bounds: [7.86±0.1, ">210"], [8.98±0.5, "<1050"]
+            #   - label: NinoxBoobook
+            #     bounds: [16.2±0.1, ">210", 17.4±0.5, "<1050"]
+            #   - label: NinoxBoobook
+            #     bounds: [26.8±0.1, ">210", 27.89±0.5, "<1050"]
+            - file: ..\..\tests\Fixtures\Powerful3AndBoobook0_ksh3_1773_510819_201711099_174311_30_0.wav
+        #       expect:
+        #           - segment_with: no_events
+        #       expect_events:
+        #           - label: NinoxBoobookk
+        #             bounds: [7.86±0.1, ">210", 8.98±0.5, "<1050"]
+        #           - label: NinoxBoobook
+        #             bounds: [16.2±0.1, ">210", 17.4±0.5, "<1050"]
+        #           - label: NinoxBoobook
+        #             bounds: [26.8±0.1, ">210", 27.89±0.5, "<1050"]
+        #             #        a: 1±0.2
+        #             #        b: '>1'
+        #             #        c: '<1'
+        #             #        d: '≥1'
+        #             #        e: '≤1'
+        #             #        f: 1±ε
+        #             #        g: '[1, 2]'
+        #             #        h: '(1, 2]'
+        #             #        i: '[1, 2)'
+        #             #        j: '(1, 2)'
+        #             # TODO: ≈ - approximately
+        #             # TODO: * - wildcard
+        #             # ∞
+        #             # -∞
+        #             #- label: boobook
+        #             #  bounds: [10, 130, 20, 300]
+        #             #- label: boobook
+        #             #  centroid: [10, 30]
+        #             #  duration: ">1.0"
+        #             #  bandwidth: ">1.0"
+        #             #- label: powerful_owl
+        #             #  match: false
+        #             #- condition: 'label.startsWith("boo")'
+        # #   - uri: ecosounds.org/123.wav
+        #     expect:
+        #       # ...
+        #include_cases: [geophony]
 
 common_cases:
     geophony:

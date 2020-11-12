@@ -1,5 +1,6 @@
 using Egret.Cli.Models;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,20 +8,22 @@ using System.IO;
 using System.Linq;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
+using YamlDotNet.Serialization.NodeDeserializers;
 
 namespace Egret.Cli.Serialization
 {
-    public class Serializer
+    public class Deserializer
     {
-        private ILogger<Serializer> Logger { get; }
-        public Serializer(ILogger<Serializer> logger)
+        private ILogger<Deserializer> Logger { get; }
+        public Deserializer(ILogger<Deserializer> logger, IOptions<AppSettings> settings)
         {
             this.Logger = logger;
             this.YamlDeserializer = new DeserializerBuilder()
                 .WithNamingConvention(UnderscoredNamingConvention.Instance)
                 .WithTagMapping("!no_events", typeof(NoEvents))
                 .WithTagMapping("!event_count", typeof(EventCount))
-                .WithTypeConverter(new IntervalTypeConverter())
+                .WithTypeConverter(new IntervalTypeConverter(settings.Value.DefaultThreshold))
+                .WithNodeDeserializer(inner => new DictionaryKeyPreserverNodeDeserializer(inner), s => s.InsteadOf<DictionaryNodeDeserializer>())
                 // WithTypeResolver
                 // WithTypeConverter
                 // WithObjectFactory
@@ -37,7 +40,7 @@ namespace Egret.Cli.Serialization
             var config = this.YamlDeserializer.Deserialize<Config>(reader);
 
             Logger.LogDebug("Normalizing config file: {file}", configFile);
-            Normalize(config);
+            Normalize(config, configFile.FullName);
 
             // TODO: call validation?
 
@@ -45,17 +48,13 @@ namespace Egret.Cli.Serialization
             return config;
         }
 
-        private static void Normalize(Config original)
+        private static void Normalize(Config original, string filePath)
         {
+            original.Location = filePath;
+
             foreach (var (name, suite) in original.TestSuites)
             {
-                // stick the dictionary key in the name field if no name was provided.
-                // We expect this to be the default case.
-                if (string.IsNullOrWhiteSpace(suite.Name))
-                {
-                    suite.Name = name;
-                }
-
+                suite.Location = filePath;
                 // resolve includes
                 if (suite.IncludeCases.Length > 0)
                 {

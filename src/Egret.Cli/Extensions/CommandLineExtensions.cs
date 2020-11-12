@@ -1,6 +1,7 @@
 ﻿using Egret.Cli.Commands;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.CommandLine;
@@ -38,25 +39,42 @@ namespace Egret.Cli.Extensions
 
             command.Handler = CommandHandler.Create<IHost, InvocationContext>(async (host, context) =>
             {
-                var ourCommand = host.Services.GetRequiredService<TCommand>();
-                return await ourCommand.InvokeAsync(context);
+                using (host.Services.GetService<ILogger<TCommand>>().Measure(commandName))
+                {
+                    var ourCommand = host.Services.GetRequiredService<TCommand>();
+                    return await ourCommand.InvokeAsync(context);
+                }
             });
 
-            return builder.ConfigureServices(BindOptions);
-
-            static void BindOptions(IServiceCollection collection)
+            return builder.ConfigureServices((collection) =>
             {
-                collection.AddSingleton<ModelBinder<TOptions>>();
-                collection.AddTransient<TOptions>((provider) =>
-                {
-                    var context = provider.GetRequiredService<BindingContext>();
-                    var modelBinder = provider.GetRequiredService<ModelBinder<TOptions>>();
-                    var options = new TOptions();
-                    modelBinder.UpdateInstance(options, context);
-                    return options;
-                });
+                BindOptions<TOptions>(collection);
                 collection.AddTransient<TCommand>();
-            }
+            });
+
+
+        }
+        public static IHostBuilder UseEgretGlobalOptions<TOptions>(this IHostBuilder builder)
+        where TOptions : class, new()
+        {
+            return builder.ConfigureServices(BindOptions<TOptions>);
+        }
+
+
+        private static void BindOptions<TOptions>(IServiceCollection collection)
+                where TOptions : class, new()
+
+        {
+            collection.AddSingleton<ModelBinder<TOptions>>();
+            collection.AddTransient<TOptions>((provider) =>
+            {
+                var context = provider.GetRequiredService<BindingContext>();
+                var modelBinder = provider.GetRequiredService<ModelBinder<TOptions>>();
+                var options = new TOptions();
+                modelBinder.UpdateInstance(options, context);
+                return options;
+            });
+
         }
     }
 }

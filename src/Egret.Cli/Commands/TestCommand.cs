@@ -1,4 +1,6 @@
 ﻿using Egret.Cli.Extensions;
+using Egret.Cli.Hosting;
+using Egret.Cli.Processing;
 using Egret.Cli.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -27,35 +29,63 @@ namespace Egret.Cli.Commands
 
     public class TestCommand : IEgretCommand
     {
+        private readonly Executor executor;
+        private readonly TestCommandOptions options;
+        private readonly Deserializer serializer;
+        private readonly ILogger<TestCommand> logger;
+        private readonly EgretConsole console;
+        private readonly ConsoleResultFormatter consoleResultFormatter;
 
-
-        public TestCommandOptions Options { get; }
-        public Serializer Serializer { get; }
-
-        public TestCommand(ILogger<TestCommand> logger, ITerminal terminal, Serializer serializer, TestCommandOptions options)
+        public TestCommand(ILogger<TestCommand> logger, EgretConsole console, Deserializer serializer, TestCommandOptions options, Executor executor, ConsoleResultFormatter consoleResultFormatter)
         {
-            Serializer = serializer;
-            Options = options;
-            Logger = logger;
-            Terminal = terminal;
+            this.consoleResultFormatter = consoleResultFormatter;
+            this.serializer = serializer;
+            this.options = options;
+            this.executor = executor;
+            this.logger = logger;
+            this.console = console;
         }
-
-        public ILogger<TestCommand> Logger { get; }
-
-        public ITerminal Terminal { get; }
-
         public async Task<int> InvokeAsync(InvocationContext context)
         {
-            Logger.LogInformation("Test Command execute");
-            Terminal.WriteLine("Starting tests".Bold());
 
-            Logger.LogDebug("Config: {config}", Options.Configuration);
+            logger.LogInformation("Test Command execute");
+            console.WriteLine("Starting test command".StyleBold());
+            //console.WriteLine("Using ")
 
-            var config = Serializer.Deserialize(Options.Configuration);
-            Logger.LogDebug("config values: {@config}", config);
+            console.WriteRichLine($"Using configuration: {options.Configuration}");
 
+            var config = serializer.Deserialize(options.Configuration);
+            logger.LogTrace("config values: {@config}", config);
 
-            return await Task.FromResult(0);
+            var results = await executor.RunSuiteAsync(config);
+
+            // summarize results
+            console.WriteLine("Results".StyleUnderline());
+
+            int successes = 0, failures = 0, count = 0;
+            foreach (var result in results)
+            {
+                console.WriteLine(consoleResultFormatter.Format(count, result));
+                count++;
+                switch (result.Success)
+                {
+                    case true: successes++; break;
+                    case false: failures++; break;
+                }
+            }
+
+            var resultSpan = (successes / (double)results.Count).ToString("P").StyleNumber();
+            console.WriteRichLine($@"
+Finished. Final results:
+{EgretConsole.Tab}Successes: {successes}
+{EgretConsole.Tab}Failures:{failures.ToString().StyleFailure()}
+{EgretConsole.Tab}Result: {resultSpan}");
+
+            // write report
+
+            logger.LogDebug("Received {count} results from executor", results);
+
+            return 0;
         }
 
 

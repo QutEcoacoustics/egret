@@ -10,7 +10,12 @@
 		"omnisharp.enableEditorConfigSupport": true,
 		"omnisharp.enableRoslynAnalyzers": true,
 		"omnisharp.enableImportCompletion": true,
-		"editor.formatOnSave": true
+		"editor.formatOnSave": true,
+		"cSpell.words": [
+			"Parallelization",
+			"Partitioner",
+			"Serilog"
+		]
 	},
 	"extensions": {
 		"recommendations": [

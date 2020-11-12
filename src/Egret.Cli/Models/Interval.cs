@@ -1,4 +1,5 @@
 
+using LanguageExt.ClassInstances;
 using System;
 using System.Buffers.Text;
 using System.Text;
@@ -8,14 +9,20 @@ using YamlDotNet.Serialization;
 
 namespace Egret.Cli.Models
 {
-    public record Interval : IYamlConvertible
+    public readonly struct Interval
     {
-        private const string tolerance = "±";
+        public static readonly Interval Unit = new Interval(0, 1);
 
-        public double Minimum { get; set; }
+        public Interval(int minimum, int maximum) : this()
+        {
+            Minimum = minimum;
+            Maximum = maximum;
+        }
 
-        public double Maximum { get; set; }
-        public Topology Topology { get; set; }
+        public double Minimum { get; init; }
+
+        public double Maximum { get; init; }
+        public Topology Topology { get; init; }
 
         /// <summary>
         /// Gets the original value of a interval value specified as a target and tolerance tuple.
@@ -23,17 +30,8 @@ namespace Egret.Cli.Models
         /// geometric mean of the interval. 
         /// </summary>
         /// <value></value>
-        public double Center { get; set; }
+        public double Center { get; init; }
 
-        public void Read(IParser parser, Type expectedType, ObjectDeserializer nestedObjectDeserializer)
-        {
-            var value = parser.Consume<Scalar>();
-        }
-
-        public void Write(IEmitter emitter, ObjectSerializer nestedObjectSerializer)
-        {
-            throw new NotImplementedException();
-        }
 
         public static Interval Degenerate(double value)
         {
@@ -42,7 +40,7 @@ namespace Egret.Cli.Models
 
         public static Interval FromTolerance(double value, double tolerance)
         {
-            return new Interval() { Maximum = value - tolerance, Minimum = value + tolerance };
+            return new Interval() { Maximum = value - tolerance, Minimum = value + tolerance, Center = value };
         }
 
         public static Interval FromString(ReadOnlySpan<byte> toParse, double defaultTolerance)
@@ -229,6 +227,28 @@ namespace Egret.Cli.Models
             }
 
         }
+
+        public override string ToString()
+        {
+            var left = IsMinimumInclusive ? '[' : '(';
+            var right = IsMaximumInclusive ? ']' : ']';
+            return $"{left}{this.Minimum}, {this.Maximum}{right}";
+        }
+
+
+        public double Range => Maximum - Minimum;
+
+        public bool IsMinimumInclusive => this.Topology == Topology.LeftClosedRightOpen || this.Topology == Topology.Closed;
+
+        public bool IsMaximumInclusive => this.Topology == Topology.LeftOpenRightClosed || this.Topology == Topology.Closed;
+
+        public double UnitNormalize(double performance, bool clamp = true)
+        {
+            var v = (performance - Minimum) / Range;
+
+            return clamp ? Math.Clamp(v, 0, 1) : v;
+        }
+
 
     }
 
