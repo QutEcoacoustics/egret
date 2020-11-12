@@ -1,5 +1,7 @@
 
-# Egret <br/> <small>an **E**coacoustics **G**eneralized **R**ecognition and **E**vent **T**ester</small>
+# Egret
+
+ > An **E**coacoustics **G**eneralized **R**ecognition and **E**vent **T**ester.
 
 ![egret demo image](docs/media/egret_output.png)
 
@@ -54,7 +56,7 @@ Egret has two main commands:
 
 1. `test` which runs all of the tests once and reports its findings
 2. 🚧`watch` which watches all your test files, configs, and tools and will
-    continually reports which tests pass or fail 🚧
+    continually reports which tests pass or fail🚧
 
 The watch command is useful for interactive training or testing of a new recognizer.
 
@@ -111,7 +113,7 @@ test_suite:
     # TODO: add tests
 ```
 
-For information on other test suite options, see 🚧[Test Suites](docs/test_suites.md)🚧
+For information on other test suite options, see [Test Suites](docs/test_suites.md)
 
 ### Configuration: Tests (`test_suites` ➡ `tests`)
 
@@ -140,10 +142,10 @@ are 4 tests, each using a different file. In the _koala_ suite there are three t
 on three files.
 
 It still isn't complete---we'll finish it in the next section. 
-None of the _tests_ actually test anything yet but it run a _tool_ on each _test_ and 
+None of the _tests_ actually test anything yet but it does run a _tool_ on each _test_ and 
 ensure it does not crash.
 
-For example, running egret with this configuration will produce the following output:
+For example, running Egret with this configuration will produce the following output:
 
 ```powershell
 C:\Temp > egret test boobook-koala-config.yml
@@ -167,7 +169,7 @@ Finished. Final results:
 ```
 
 This works as expected. The file named `i_do_not_exist_because_someone_gave_me_this_silly_filename.wav`
-does not actually exist and egret reported this as an error.
+does not actually exist and Egret reported this as an error.
 
 ### Configuration: Expectations (`test_suites` ➡ `tests` ➡ `expect`)
 
@@ -402,6 +404,20 @@ It can. There are two steps:
 2. ensure you return results that approximately adhere to our standards (see [results](./docs/results.md) for guidance)
 3. (this is now an _index off by one joke_)
 
+### Does Egret work with machine learning / deep learning tools?
+
+Yes? No? Egret doesn't care.
+
+Egret works with _tools_ that produce _results_. Egret does not care how you
+produce your result, only that it was produced and passes the tests defined
+in the configuration file.
+
+You're free to use whatever method of analysis that you want.
+
+### Why C#?
+
+Because I (@atruskie) am fast and productive with it, especially when I have to
+produce long-lived, real-world products.
 
 ## LICENSE
 
