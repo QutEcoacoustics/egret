@@ -1,9 +1,11 @@
 /* visualize this here: https://bottlecaps.de/rr/ui */
-grammar ::= interval* 
-interval ::= number | tolerance | relation | bounded
+/* or generate docs images with  grammkit -t md  -f ebnf  interval.ebnf   */
+ 
+expression ::= number | tolerance | relation | interval | approximation
 tolerance ::= number "±" number
 relation ::= (">" | "<" | "≥" | "≤") number
-bounded ::= ("[" | "(") number "," number (")" | "]")
+approximation ::= ( "~" | "≈") number
+interval ::= ("[" | "(") number "," number (")" | "]")
 
 number ::= constant | real
 constant ::= "ε" | "∞" | "-∞"

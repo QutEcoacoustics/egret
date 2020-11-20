@@ -6,6 +6,10 @@ using System.Text;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
+using Egret.Cli.Maths;
+using LanguageExt;
+using static Egret.Cli.Models.Topology;
+
 
 namespace Egret.Cli.Models
 {
@@ -13,10 +17,11 @@ namespace Egret.Cli.Models
     {
         public static readonly Interval Unit = new Interval(0, 1);
 
-        public Interval(int minimum, int maximum) : this()
+        public Interval(double minimum, double maximum) : this()
         {
             Minimum = minimum;
             Maximum = maximum;
+            Middle = (minimum, maximum).Center();
         }
 
         public double Minimum { get; init; }
@@ -28,19 +33,30 @@ namespace Egret.Cli.Models
         /// Gets the original value of a interval value specified as a target and tolerance tuple.
         /// In cases where a interval was defined as minimum and maximum it instead gets the 
         /// geometric mean of the interval. 
+        /// In the case of a relation (or an interval with an infinite bound) it returns whichever bound is not infinite.
         /// </summary>
         /// <value></value>
-        public double Center { get; init; }
+        public double Middle { get; init; }
 
 
         public static Interval Degenerate(double value)
         {
-            return new Interval() { Maximum = value, Minimum = value };
+            return new Interval()
+            {
+                Maximum = value,
+                Minimum = value,
+                Middle = value
+            };
         }
 
         public static Interval FromTolerance(double value, double tolerance)
         {
-            return new Interval() { Maximum = value - tolerance, Minimum = value + tolerance, Center = value };
+            return new Interval()
+            {
+                Maximum = value - tolerance,
+                Minimum = value + tolerance,
+                Middle = value
+            };
         }
 
         public static Interval FromString(ReadOnlySpan<byte> toParse, double defaultTolerance)
@@ -223,6 +239,7 @@ namespace Egret.Cli.Models
                     Maximum = maximum,
                     Topology = topology.Value
                 };
+
                 return true;
             }
 
@@ -238,21 +255,65 @@ namespace Egret.Cli.Models
 
         public double Range => Maximum - Minimum;
 
-        public bool IsMinimumInclusive => this.Topology == Topology.LeftClosedRightOpen || this.Topology == Topology.Closed;
+        public bool IsMinimumInclusive => Topology.IsMinimumInclusive();
 
-        public bool IsMaximumInclusive => this.Topology == Topology.LeftOpenRightClosed || this.Topology == Topology.Closed;
+        public bool IsMaximumInclusive => Topology.IsMaximumInclusive();
 
-        public double UnitNormalize(double performance, bool clamp = true)
+        public double UnitNormalize(double value, bool clamp = true)
         {
-            var v = (performance - Minimum) / Range;
+            var v = (value - Minimum) / Range;
 
             return clamp ? Math.Clamp(v, 0, 1) : v;
         }
 
+        public bool Contains(double value)
+        {
+            return Topology switch
+            {
+                Exclusive => Minimum < value && value < Maximum,
+                MinimumExclusiveMaximumInclusive => Minimum <= value && value < Maximum,
+                MinimumInclusiveMaximumExclusive => Minimum < value && value <= Maximum,
+                Inclusive => Minimum <= value && value <= Maximum,
+                _ => throw new ArgumentException($"Invalid topology encountered: {Topology}")
+            };
+        }
 
+
+        public bool IntersectsWith(Interval b)
+        {
+            var a1 = Minimum;
+            var a2 = Maximum;
+            var b1 = b.Minimum;
+            var b2 = b.Maximum;
+
+            // there are 9 possible placements we care about
+            return this switch
+            {
+                // A  B         non-overlapping
+                _ when a2 < b1 => false,
+                // B  A         non-overlapping
+                _ when b2 < a1 => false,
+                // B==A         B and A are exactly equal
+                _ when a1 == b1 && a2 == b2 => true,
+                // AB           touching, possibly overlapping
+                var a when a2 == b1 => a.Topology.IsCompatibleWith(b.Topology),
+                // BA           touching, possibly overlapping
+                var a when a1 == b2 => b.Topology.IsCompatibleWith(a.Topology),
+                // B--A--B      B wholly contains A
+                _ when b1 < a1 && a2 < b1 => true,
+                // A--B--A      A wholly contains B
+                _ when a1 < b1 && b2 < a2 => true,
+                // A--B==A--B   A and B overlap
+                _ when b1 < a2 => true,
+                // B--A==B--A   B and A overlap
+                _ when a1 < b2 => true,
+                _ => throw new InvalidOperationException()
+            };
+        }
     }
 
-
-
-
+    public static class IntervalExtensions
+    {
+        public static bool IntersectsWith(this double value, Interval interval) => interval.Contains(value);
+    }
 }

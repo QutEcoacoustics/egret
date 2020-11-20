@@ -1,4 +1,5 @@
 using System;
+using System.Numerics;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
@@ -11,18 +12,18 @@ namespace Egret.Cli.Models
     /// <summary>
     public struct Centroid : IYamlConvertible
     {
-        public Interval Seconds { get; private set; }
+        public Interval StartSeconds { get; private set; }
 
-        public Interval Hertz { get; private set; }
+        public Interval LowHertz { get; private set; }
 
         public void Read(IParser parser, Type expectedType, ObjectDeserializer nestedObjectDeserializer)
         {
             parser.Consume<SequenceStart>();
 
             // the interval type converter consumes one scalar token per invocation
-            this.Seconds = (Interval)nestedObjectDeserializer.Invoke(typeof(Interval));
+            this.StartSeconds = (Interval)nestedObjectDeserializer.Invoke(typeof(Interval));
 
-            this.Hertz = (Interval)nestedObjectDeserializer.Invoke(typeof(Interval));
+            this.LowHertz = (Interval)nestedObjectDeserializer.Invoke(typeof(Interval));
 
             parser.Consume<SequenceEnd>();
         }
@@ -30,10 +31,13 @@ namespace Egret.Cli.Models
         public void Write(IEmitter emitter, ObjectSerializer nestedObjectSerializer)
         {
             nestedObjectSerializer.Invoke(new[] {
-                this.Seconds,
-                this.Hertz,
+                this.StartSeconds,
+                this.LowHertz,
             }, typeof(Interval[]));
         }
+
+        public Vector2 ToCoordinates()
+         => new Vector2((float)StartSeconds.Middle, (float)LowHertz.Middle);
     }
 
 

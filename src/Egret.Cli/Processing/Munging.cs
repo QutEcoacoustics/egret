@@ -3,6 +3,7 @@ using Egret.Cli.Models;
 using LanguageExt;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using YamlDotNet.Core.Tokens;
 
@@ -13,14 +14,89 @@ namespace Egret.Cli.Processing
 
         public static readonly IEnumerable<string> LabelNames = new string[]
         {
-            "Label",
-            "Tag",
-            "Species",
-            "Name"
+            "label",
+            "tag",
+            "species",
+            "name"
+        };
+
+        public static readonly IEnumerable<string> StartNames = new string[]
+        {
+            "start",
+            "event start seconds",
+            "start offset seconds",
+            "start seconds",
+            "event start offset seconds",
+            "start offset",
+        };
+
+        public static readonly IEnumerable<string> CentroidStartNames = new string[]
+        {
+            "time",
+            "centroid time seconds",
+            "centroid time",
+            "seconds",
+            "start",
+            "event start seconds",
+            "start offset seconds",
+            "start seconds",
+            "event start offset seconds",
+            "start offset",
+        };
+
+        public static readonly IEnumerable<string> EndNames = new string[]
+        {
+            "end",
+            "event end seconds",
+            "end offset seconds",
+            "end seconds",
+            "event end offset seconds",
+            "end offset",
+        };
+        public static readonly IEnumerable<string> LowNames = new string[]
+        {
+            "low",
+            "event low hertz",
+            "low hertz",
+            "min hz"
+        };
+        public static readonly IEnumerable<string> CentroidLowNames = new string[]
+        {
+            "frequency",
+            "centroid frequency",
+            "hertz",
+            "low",
+            "event low hertz",
+            "low hertz",
+        };
+        public static readonly IEnumerable<string> HighNames = new string[]
+        {
+            "high",
+            "event high hertz",
+            "high hertz",
+            "max hz"
+        };
+
+        public static readonly IEnumerable<string> BandWidthNames = new string[]
+        {
+            "bandwidth",
+            "bandwidth hertz"
+        };
+
+        public static readonly IEnumerable<string> DurationNames = new string[]
+        {
+            "duration",
+            "event duration",
+            "duration seconds",
+            "event duration seconds"
         };
 
         public static readonly IReadOnlyDictionary<string, Func<string, string>> NamingConventions = new Dictionary<string, Func<string, string>>() {
-            { "lower case" , (x) => x.ToLower()},
+            { "snake case" , (x) => x.Replace(" ", "_") },
+            {
+                "pascal case",
+                (x) => string.Join(string.Empty, x.Split(' ').Select( x => char.ToUpperInvariant(x[0]) + x[1..]))
+            },
         };
 
         private static readonly string ConventionList = string.Join(",", NamingConventions.Keys);
@@ -33,14 +109,14 @@ namespace Egret.Cli.Processing
             }
         }
 
-        public static Validation<string, (string Key, T Value)> TryNames<T>(ITryGetValue subject, IEnumerable<string> names)
+        public static Validation<string, KeyedValue<T>> TryNames<T>(ITryGetValue subject, IEnumerable<string> names)
         {
             // first try names, and then try every other name defined in the naming conventions
             foreach (var name in names.Concat(names.SelectMany(GenerateNames)))
             {
-                if (subject.TryGetValue<T>(name, out var matchedValue))
+                if (subject.TryGetValue<T>(name, out var matchedValue, StringComparison.InvariantCultureIgnoreCase))
                 {
-                    return (name, matchedValue);
+                    return new KeyedValue<T>(name, matchedValue);
                 }
             }
 

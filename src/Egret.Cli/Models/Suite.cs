@@ -29,6 +29,7 @@ namespace Egret.Cli.Models
 
         public string[] IncludeCases { get; init; } = Array.Empty<string>();
 
+        [YamlIgnore]
         public Dictionary<string, Case[]> SharedCases { get; init; } = new();
 
         public Dictionary<string, Dictionary<string, object>> ToolConfigs { get; init; }

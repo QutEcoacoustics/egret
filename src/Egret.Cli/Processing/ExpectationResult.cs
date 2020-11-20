@@ -9,6 +9,11 @@ namespace Egret.Cli.Processing
     public record ExpectationResult
     {
         public ExpectationResult(IExpectationTest subject, params Assertion[] assertions)
+        : this(subject, (IReadOnlyList<Assertion>)assertions)
+        {
+        }
+
+        public ExpectationResult(IExpectationTest subject, IReadOnlyList<Assertion> assertions)
         {
             Successful = assertions.All(x => x is SuccessfulAssertion);
             Subject = subject;
@@ -41,15 +46,32 @@ namespace Egret.Cli.Processing
 
     public record FailedAssertion : Assertion
     {
-        public FailedAssertion(string name, string matchedKey) : base(name, matchedKey)
-        {
-        }
         public FailedAssertion(string name, string matchedKey, params string[] reasons) : base(name, matchedKey)
         {
             Reasons = reasons;
         }
 
-        public IReadOnlyList<string> Reasons { get; init; }
+        public FailedAssertion(string name, string matchedKey, Seq<string> reasons) : base(name, matchedKey)
+        {
+            Reasons = reasons.ToArray();
+        }
+
+
+        public IReadOnlyList<string> Reasons { get; }
+    }
+
+    public record ErrorAssertion : Assertion
+    {
+        public ErrorAssertion(string name, string matchedKey, params string[] reasons) : base(name, matchedKey)
+        {
+            Reasons = reasons;
+        }
+        public ErrorAssertion(string name, string matchedKey, Seq<string> reasons) : base(name, matchedKey)
+        {
+            Reasons = reasons.ToArray();
+        }
+
+        public IReadOnlyList<string> Reasons { get; }
     }
 
 }

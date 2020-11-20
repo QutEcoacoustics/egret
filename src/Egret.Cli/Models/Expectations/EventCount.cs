@@ -6,25 +6,22 @@ namespace Egret.Cli.Models
 {
     public class EventCount : AggregateExpectation
     {
+        private const string AssertionName = "Event count";
+        private string name;
 
         public Interval Count { get; init; }
         public override bool Match { get; init; } = true;
 
         public override string Name
         {
-            get
-            {
-                return $"Segment has {Count} events";
-            }
-            init => throw new System.NotImplementedException();
+            get => name ?? $"Segment has {Count} events";
+            init => name = value;
         }
 
-        private const string AssertionName = "Event count";
 
         public override IEnumerable<ExpectationResult> Test(IReadOnlyList<NormalizedResult> actualEvents)
         {
-            throw new NotImplementedException();
-            var success = false;// ((IExpectationTest)this).Matches(actualEvents.Count == this.Count);
+            var success = ((IExpectationTest)this).Matches(Count.Contains(actualEvents.Count));
 
             Assertion assertion = success switch
             {

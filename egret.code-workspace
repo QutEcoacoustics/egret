@@ -12,9 +12,11 @@
 		"omnisharp.enableImportCompletion": true,
 		"editor.formatOnSave": true,
 		"cSpell.words": [
+			"Intrinsics",
 			"Parallelization",
 			"Partitioner",
-			"Serilog"
+			"Serilog",
+			"Succ"
 		]
 	},
 	"extensions": {
