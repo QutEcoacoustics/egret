@@ -26,8 +26,8 @@ namespace Egret.Cli.Models
 
         public override IEnumerable<Assertion> TestBounds(NormalizedResult result)
         {
-            yield return TestBound("Start", result.Start, Time.StartSeconds);
-            yield return TestBound("End", result.Low, Time.EndSeconds);
+            yield return TestBound("Time.Start", result.Start, Time.StartSeconds);
+            yield return TestBound("Time.End", result.Low, Time.EndSeconds);
         }
     }
 }

@@ -33,7 +33,7 @@ namespace Egret.Cli.Processing
 
 
 
-        public async Task<List<SuiteResult>> RunSuiteAsync(Config config, bool parallel = false)
+        public async Task<List<TestCaseResult>> RunSuiteAsync(Config config, bool parallel = false)
         {
             logger.LogTrace("Generating tasks");
             var cases = GenerateTasks(config).ToArray();
@@ -43,8 +43,8 @@ namespace Egret.Cli.Processing
             int total = cases.Length;
             int progress = 0;
 
-            var results = new List<SuiteResult>(cases.Length);
-            await foreach (var result in cases.ForEachAsync<CaseExecutor, SuiteResult>())
+            var results = new List<TestCaseResult>(cases.Length);
+            await foreach (var result in cases.ForEachAsync<CaseExecutor, TestCaseResult>())
             {
                 var percentage = Interlocked.Increment(ref progress) / (double)total;
                 logger.LogDebug("Progress: {progress:P}", percentage);

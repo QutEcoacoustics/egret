@@ -44,7 +44,7 @@ namespace Egret.Cli.Processing
             logger.LogDebug("Finished process {tool} {args} with result {exitCode}", tool.Executable, arguments, processResult.ExitCode);
             logger.LogTrace("Process detail: {@process}", processResult);
 
-            return new ToolResult(processResult.Success, outputDir);
+            return new ToolResult(processResult.Success, outputDir, processResult.Exception);
         }
 
         public string PrepareArguments(string args, Dictionary<string, object> suiteConfig, CommandPlaceholders placeholders)
@@ -93,7 +93,7 @@ namespace Egret.Cli.Processing
             {
                 // Usually it occurs when an executable file is not found or is not executable
                 isStarted = false;
-                return new ProcessResult(false, -1, process.StandardOutput.ReadToEnd(), process.StandardError.ReadToEnd(), ex);
+                return new ProcessResult(false, -1, string.Empty, string.Empty, ex);
             }
 
 
@@ -167,15 +167,17 @@ namespace Egret.Cli.Processing
 
     public record ToolResult
     {
-        public ToolResult(bool success, DirectoryInfo results)
+        public ToolResult(bool success, DirectoryInfo results, Exception exception)
         {
             Success = success;
             Results = results;
+            Exception = exception;
         }
 
         public bool Success { get; }
 
         public DirectoryInfo Results { get; }
+        public Exception Exception { get; }
     }
 
     public record CommandPlaceholders(string Source, string Output, string TempDir);

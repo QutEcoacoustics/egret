@@ -2,6 +2,7 @@ using Egret.Cli.Extensions;
 using Egret.Cli.Hosting;
 using Egret.Cli.Models;
 using Egret.Cli.Serialization;
+using StringTokenFormatter;
 using System.Collections.Generic;
 using System.CommandLine.Rendering;
 using System.Linq;
@@ -22,7 +23,7 @@ namespace Egret.Cli.Processing
 
         }
 
-        public ContainerSpan Format(int index, SuiteResult result)
+        public ContainerSpan Format(int index, TestCaseResult result)
         {
             var formattedErrors = FormatErrors(result.Errors);
             var formattedEventResults = ResultSection("Events", result.Results.Where(e => e is { Subject: Expectation }));
@@ -96,10 +97,11 @@ namespace Egret.Cli.Processing
                     SoftTab3,
                     "- ".AsTextSpan(),
                     FormatSuccess(assertion is SuccessfulAssertion),
-                    (
-                        " " + assertion.Name
-                        + (assertion.MatchedKey is null ? string.Empty : $" {assertion.MatchedKey}")
-                    ).AsTextSpan()
+                    Space,
+                    assertion.Name.AsTextSpan(),
+                    assertion.MatchedKey is null
+                        ? TextSpan.Empty()
+                        : new ContainerSpan(" matches ".AsTextSpan(), assertion.MatchedKey.StyleValue())
                 );
 
                 if (assertion is FailedAssertion f)

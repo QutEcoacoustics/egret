@@ -9,7 +9,8 @@ using YamlDotNet.Serialization;
 using Egret.Cli.Maths;
 using LanguageExt;
 using static Egret.Cli.Models.Topology;
-
+using System.Collections.Generic;
+using MoreLinq;
 
 namespace Egret.Cli.Models
 {
@@ -30,13 +31,26 @@ namespace Egret.Cli.Models
         public Topology Topology { get; init; }
 
         /// <summary>
-        /// Gets the original value of a interval value specified as a target and tolerance tuple.
+        /// Gets the original value of a interval that specified as a target value and tolerance tuple.
         /// In cases where a interval was defined as minimum and maximum it instead gets the 
         /// geometric mean of the interval. 
         /// In the case of a relation (or an interval with an infinite bound) it returns whichever bound is not infinite.
         /// </summary>
+        /// <remarks>
+        /// This property is designed to be give a useful real number that allows the interval to placed in a domain.
+        /// If you need the strict mathematical definition of the midpoint then see <c>Center</c>.
         /// <value></value>
         public double Middle { get; init; }
+
+        /// <summary>
+        /// Gets the midpoint of the interval.
+        /// </summary>
+        /// <remarks>
+        /// Differs from <c>Middle</c> in that is the mathematical definition only.
+        /// If either endpoint is Infinite, the result will be infinite.
+        /// </remarks>
+        /// <returns>The midpoint.</returns>
+        public double Center => (Minimum, Maximum).Center();
 
 
         public static Interval Degenerate(double value)
@@ -45,7 +59,10 @@ namespace Egret.Cli.Models
             {
                 Maximum = value,
                 Minimum = value,
-                Middle = value
+                Middle = value,
+                // Topology must be inclusive otherwise it represents an empty set.
+                // i.e. with default topology [,) the result is x <= x < x - which is always false, i.e. an empty set
+                Topology = Inclusive,
             };
         }
 
@@ -56,6 +73,28 @@ namespace Egret.Cli.Models
                 Maximum = value - tolerance,
                 Minimum = value + tolerance,
                 Middle = value
+            };
+        }
+
+        /// <summary>
+        /// The closure of I is the smallest closed interval that contains I; which is also the set I augmented with its finite endpoints.
+        /// </summary>
+        /// <param name="points"></param>
+        /// <returns></returns>
+        public static Interval ClosureOf(IEnumerable<double> points)
+        {
+            var (min, max) = points.Aggregate(
+                double.PositiveInfinity, (extrema, value) => Math.Min(extrema, value),
+                double.NegativeInfinity, (extrema, value) => Math.Max(extrema, value),
+                (min, max) => (min, max)
+            );
+
+            return new Interval()
+            {
+                Maximum = max,
+                Minimum = min,
+                Middle = (max, min).Center(),
+                Topology = Open,
             };
         }
 
@@ -197,10 +236,10 @@ namespace Egret.Cli.Models
                 value = default;
                 Topology? topology = ((char)span[0], (char)span[^1]) switch
                 {
-                    ('[', ']') => Topology.Closed,
-                    ('[', ')') => Topology.LeftClosedRightOpen,
-                    ('(', ']') => Topology.LeftOpenRightClosed,
-                    ('(', ')') => Topology.Open,
+                    ('[', ']') => Closed,
+                    ('[', ')') => LeftClosedRightOpen,
+                    ('(', ']') => LeftOpenRightClosed,
+                    ('(', ')') => Open,
                     _ => null
                 };
 
@@ -248,8 +287,18 @@ namespace Egret.Cli.Models
         public override string ToString()
         {
             var left = IsMinimumInclusive ? '[' : '(';
-            var right = IsMaximumInclusive ? ']' : ']';
+            var right = IsMaximumInclusive ? ']' : ')';
             return $"{left}{this.Minimum}, {this.Maximum}{right}";
+        }
+
+        public string ToString(bool simplify)
+        {
+            return this switch
+            {
+                _ when !simplify => ToString(),
+                { IsDegenerate: true } => Center.ToString(),
+                _ => ToString()
+            };
         }
 
 
@@ -258,6 +307,15 @@ namespace Egret.Cli.Models
         public bool IsMinimumInclusive => Topology.IsMinimumInclusive();
 
         public bool IsMaximumInclusive => Topology.IsMaximumInclusive();
+
+        public bool IsDegenerate => Minimum == Maximum && Topology == Inclusive;
+        public bool IsEmpty => Minimum == Maximum && Topology != Inclusive;
+
+        /// <summary>
+        /// Gets the largest open interval (excluding endpoints) within the bounds of the current interval.
+        /// </summary>
+        /// <returns>A new interior interval</returns>
+        public Interval Interior => new Interval() { Minimum = Minimum, Maximum = Maximum, Middle = Middle, Topology = Exclusive };
 
         public double UnitNormalize(double value, bool clamp = true)
         {
@@ -271,8 +329,8 @@ namespace Egret.Cli.Models
             return Topology switch
             {
                 Exclusive => Minimum < value && value < Maximum,
-                MinimumExclusiveMaximumInclusive => Minimum <= value && value < Maximum,
-                MinimumInclusiveMaximumExclusive => Minimum < value && value <= Maximum,
+                MinimumInclusiveMaximumExclusive => Minimum <= value && value < Maximum,
+                MinimumExclusiveMaximumInclusive => Minimum < value && value <= Maximum,
                 Inclusive => Minimum <= value && value <= Maximum,
                 _ => throw new ArgumentException($"Invalid topology encountered: {Topology}")
             };

@@ -37,9 +37,11 @@ namespace Egret.Cli.Models
         public Interval? Duration { get; init; }
         public Interval? Bandwidth { get; init; }
 
+        public Interval? Index { get; init; }
+
         public string Condition
         {
-            get => throw new NotImplementedException();
+            get => null;
             init => throw new NotImplementedException();
         }
 
@@ -70,7 +72,11 @@ namespace Egret.Cli.Models
                     this,
                     new ErrorAssertion("Finding closest result", null, allErrors)
                 );
+
+                // cannot continue for this result
+                yield break;
             }
+
             var (closestIndex, closestDistance) = (KeyValuePair<int, Validation<string, double>>)closest;
             var candidate = actualEvents[closestIndex];
 
@@ -88,33 +94,12 @@ namespace Egret.Cli.Models
                 results.Add(TestDuration(candidate));
             }
 
+            if (Index is not null)
+            {
+                results.Add(TestIndex(candidate, closestIndex));
+            }
+
             results.AddRange(TestBounds(candidate));
-
-
-            // // run all relevant tests across all events storing all matches
-            // // the event that matches the most conditions is out candidate event
-            // // (i.e. the closest matching in attributes) and the one we will use
-            // // to form our result.
-            // var matches = new List<IEnumerable<Assertion>>(actualEvents.Count);
-            // var highestMatch = -1;
-            // var highestIndex = -1;
-            // for (int index = 0; index < actualEvents.Count; index++)
-            // {
-            //     var current = actualEvents[index];
-            //     var tests = conditions.Select(x => x(this, @current));
-
-            //     var testsPassed = tests.Count(x => x is SuccessfulAssertion);
-            //     if (testsPassed > highestMatch)
-            //     {
-            //         highestMatch = testsPassed;
-            //         highestIndex = index;
-            //     }
-            //     matches.Add(tests);
-            // }
-
-            // // select candidate and it's results
-            // var candidate = actualEvents[highestIndex];
-            // var candidateResults = matches[highestIndex].ToArray();
 
             // finally form a result
 
@@ -126,7 +111,7 @@ namespace Egret.Cli.Models
 
         public Assertion TestLabel(NormalizedResult result)
         {
-            const string Name = "Label matches";
+            const string Name = "Label";
             return result.Label.Match(Test, notFound(Name));
 
             Assertion Test(KeyedValue<string> label)
@@ -143,17 +128,22 @@ namespace Egret.Cli.Models
 
         public Assertion TestBandwidth(NormalizedResult result)
         {
-            const string Name = "Bandwidth matches";
+            const string Name = "Bandwidth";
             return TestBound(Name, result.Bandwidth, this.Bandwidth.Value);
 
         }
         public Assertion TestDuration(NormalizedResult result)
         {
-            const string Name = "Duration matches";
+            const string Name = "Duration";
             return TestBound(Name, result.Duration, this.Duration.Value);
 
         }
+        public Assertion TestIndex(NormalizedResult _, int resultIndex)
+        {
+            const string Name = "Index";
+            return TestBound(Name, new KeyedValue<double>("Index", resultIndex), Index.Value);
 
+        }
 
         private static readonly Func<string, Func<Seq<string>, Assertion>> notFound = curry<string, Seq<string>, Assertion>(NotFound);
 

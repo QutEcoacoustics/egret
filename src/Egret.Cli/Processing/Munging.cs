@@ -92,6 +92,7 @@ namespace Egret.Cli.Processing
         };
 
         public static readonly IReadOnlyDictionary<string, Func<string, string>> NamingConventions = new Dictionary<string, Func<string, string>>() {
+            { "title case" , (x) =>  string.Join(' ', x.Split(' ').Select( x => char.ToUpperInvariant(x[0]) + x[1..])) },
             { "snake case" , (x) => x.Replace(" ", "_") },
             {
                 "pascal case",
@@ -111,8 +112,19 @@ namespace Egret.Cli.Processing
 
         public static Validation<string, KeyedValue<T>> TryNames<T>(ITryGetValue subject, IEnumerable<string> names)
         {
-            // first try names, and then try every other name defined in the naming conventions
-            foreach (var name in names.Concat(names.SelectMany(GenerateNames)))
+            // first try every name defined in the naming conventions
+
+            var allNames = names.SelectMany(GenerateNames).Concat(names).ToArray();
+            foreach (var name in allNames)
+            {
+                if (subject.TryGetValue<T>(name, out var matchedValue, StringComparison.InvariantCulture))
+                {
+                    return new KeyedValue<T>(name, matchedValue);
+                }
+            }
+
+            // as a last ditch effort try names again, this time case-invariant
+            foreach (var name in allNames)
             {
                 if (subject.TryGetValue<T>(name, out var matchedValue, StringComparison.InvariantCultureIgnoreCase))
                 {

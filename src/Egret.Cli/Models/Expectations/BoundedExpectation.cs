@@ -14,7 +14,9 @@ namespace Egret.Cli.Models
     public class BoundedExpectation : Expectation
     {
         public Bounds Bounds { get; init; }
-        public override string Name { get; init; } = "Event bounds";
+
+
+        public override string Name { get; init; } = "Bounded event";
 
         public override Validation<string, double> Distance(NormalizedResult result)
         {
@@ -23,14 +25,12 @@ namespace Egret.Cli.Models
                 .Map(bounds => (double)Maths.Distance.BoxDistance(Bounds.ToCoordinates(), bounds));
         }
 
-
         public override IEnumerable<Assertion> TestBounds(NormalizedResult result)
         {
-            yield return TestBound("Start", result.Start, Bounds.StartSeconds);
-            yield return TestBound("End", result.End, Bounds.EndSeconds);
-            yield return TestBound("Low", result.Low, Bounds.LowHertz);
-            yield return TestBound("High", result.High, Bounds.HighHertz);
+            yield return TestBound("Bounds.Start", result.Start, Bounds.StartSeconds);
+            yield return TestBound("Bounds.End", result.End, Bounds.EndSeconds);
+            yield return TestBound("Bounds.Low", result.Low, Bounds.LowHertz);
+            yield return TestBound("Bounds.High", result.High, Bounds.HighHertz);
         }
-
     }
 }

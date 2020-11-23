@@ -122,6 +122,7 @@ the following properties:
 - `label` - a textual label/tag/classification of the result
 - `duration` - check the duration of an event
 - `bandwidth` - check the bandwidth of an event
+- `index` - the expected index in the results file
 - 🚧`condition` - check an arbitrary condition🚧
 
 All of these properties may be omitted. If they are then Egret does not check them.

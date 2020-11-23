@@ -17,7 +17,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Egret.Cli.Processing
 {
-    public class CaseExecutor : IAsyncInvokeable<SuiteResult>
+    public class CaseExecutor : IAsyncInvokeable<TestCaseResult>
     {
 
         public readonly struct CaseTracker
@@ -61,7 +61,7 @@ namespace Egret.Cli.Processing
         private readonly TempFactory tempFactory;
         private readonly HttpClient http;
 
-        public async Task<SuiteResult> InvokeAsync(int index, CancellationToken token)
+        public async Task<TestCaseResult> InvokeAsync(int index, CancellationToken token)
         {
             using (logger.BeginScope("Case {index}: {case}", index, Tracker))
             using (var timer = logger.Measure(Tracker.ToString()))
@@ -79,15 +79,17 @@ namespace Egret.Cli.Processing
                     var toolResult = await RunToolAsync(file);
                     if (!toolResult.Success)
                     {
-                        errors.Add("tool did not exit successfully");
+                        errors.Add("tool did not exit successfully:" + toolResult.Exception?.Message);
                     }
+                    else
+                    {
+                        var analysisresults = await LoadResultsAsync(toolResult).ToListAsync();
 
-                    var analysisresults = await LoadResultsAsync(toolResult).ToListAsync();
+                        logger.LogInformation("Loaded {count} results", analysisresults.Count);
 
-                    logger.LogInformation("Loaded {count} results", analysisresults.Count);
+                        expectationResults = AssessResults(Case.Expect, analysisresults);
 
-                    expectationResults = AssessResults(Case.ExpectEvents, Case.Expect, analysisresults);
-
+                    }
 
                     success = toolResult.Success && expectationResults.All(x => x.Successful);
                 }
@@ -103,10 +105,10 @@ namespace Egret.Cli.Processing
                 logger.LogTrace("Finished case: {case} for tool: {tool}", source, Tool.Name);
 
 
-                return await Task.FromResult(new SuiteResult(
+                return await Task.FromResult(new TestCaseResult(
                     errors,
                     expectationResults,
-                    new SuiteResultContext(
+                    new TestContext(
                         Suite,
                         Tool.Name,
                         source,
@@ -127,22 +129,20 @@ namespace Egret.Cli.Processing
 
             FileInfo ResolveLocal(string path)
             {
-                FileInfo file;
                 if (!Path.IsPathFullyQualified(path))
                 {
-                    file = new FileInfo(Path.Combine(Path.GetDirectoryName(Suite.Location), path));
-                }
-                else
-                {
-                    file = new FileInfo(path);
+                    path = Path.Combine(Path.GetDirectoryName(Suite.Location), path);
                 }
 
+                path = Path.GetFullPath(path);
+
+                FileInfo file = new FileInfo(path);
                 if (file.Exists)
                 {
                     return file;
                 }
 
-                throw new FileNotFoundException($"Count not find source file: {file}", file.FullName);
+                throw new FileNotFoundException($"File not found: {path}", file.FullName);
             }
         }
 
@@ -219,13 +219,9 @@ namespace Egret.Cli.Processing
             // TODO: ADD WARNING WHEN NO FILES FOUND
         }
 
-        private List<ExpectationResult> AssessResults(Expectation[] events, AggregateExpectation[] segments, IReadOnlyList<NormalizedResult> actual)
+        private List<ExpectationResult> AssessResults(IExpectationTest[] expectations, IReadOnlyList<NormalizedResult> actual)
         {
-            var results = new List<ExpectationResult>(events.Length + segments.Length);
-
-            var expectations = events
-                .Cast<IExpectationTest>()
-                .Concat(segments.Cast<IExpectationTest>());
+            var results = new List<ExpectationResult>(expectations.Length);
 
             foreach (var expectation in expectations)
             {

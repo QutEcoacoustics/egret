@@ -1,3 +1,4 @@
+using Egret.Cli.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
@@ -24,6 +25,7 @@ namespace Egret.Cli.Serialization
                 .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitDefaults)
                 .WithTypeConverter(new ShortDoubleConverter())
                 .WithTypeConverter(new IntervalTypeConverter(settings.Value.DefaultThreshold))
+                .WithAttributeOverride<IExpectationTest>(x => x.Name, new YamlIgnoreAttribute())
                 .Build();
 
         }

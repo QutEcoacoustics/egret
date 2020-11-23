@@ -14,7 +14,7 @@ namespace Egret.Cli.Models
 
         public override string Name
         {
-            get => name ?? $"Segment has {Count} events";
+            get => name ?? $"Segment has {Count.ToString(simplify: true)} results";
             init => name = value;
         }
 
@@ -26,7 +26,7 @@ namespace Egret.Cli.Models
             Assertion assertion = success switch
             {
                 true => new SuccessfulAssertion(AssertionName, null),
-                false => new FailedAssertion(AssertionName, null, $"Expected {this.Count} results but {actualEvents.Count} were found")
+                false => new FailedAssertion(AssertionName, null, $"event count `{actualEvents.Count}` was not within {Count}")
             };
 
             yield return new ExpectationResult(this, assertion);
