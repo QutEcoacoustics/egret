@@ -4,6 +4,7 @@ using LanguageExt;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using System.Threading;
 using static LanguageExt.Prelude;
@@ -22,7 +23,7 @@ namespace Egret.Cli.Models
         public const string CompositeKeyDelimiter = "+";
 
         public CompositeKeyedValue(IEnumerable<string> keys, T Value)
-            : base(string.Join(CompositeKeyDelimiter, keys), Value)
+            : base(keys.Join(CompositeKeyDelimiter), Value)
         {
             Keys = keys;
         }

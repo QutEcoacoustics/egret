@@ -23,15 +23,16 @@ test_suites:
           - segment_with: event_count
             count: 3
           - label: NinoxBoobook
-            bounds: [7.86±0.1, ">210", 8.98±0.5, "<1050"]
+            bounds: [≈0.069, "420", ≈0.84, "<500"]
+          - name: high freq BoobookSyllable
+            label: NinoxBoobook
+            bounds: [16.9±0.5, ">700", 17.3±0.5, "<950"]
           - label: NinoxBoobook
-            bounds: [16.2±0.1, ">210", 17.4±0.5, "<1050"]
-          - label: NinoxBoobook
-            bounds: [26.8±0.1, ">210", 27.89±0.5, "<1050"]
+            bounds: [18.9±0.5, "420", 19.4±0.5, "<500"]
       - file: ..\..\tests\Fixtures\Powerful3AndBoobook0_ksh3_1773_510819_20171109_174311_30_0.wav
         expect:
           - segment_with: event_count
-            count: 4
+            count: 3
     #       expect:
     #           - segment_with: no_events
     #       expect_events:

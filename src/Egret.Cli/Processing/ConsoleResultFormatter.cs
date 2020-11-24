@@ -3,6 +3,7 @@ using Egret.Cli.Hosting;
 using Egret.Cli.Models;
 using Egret.Cli.Serialization;
 using StringTokenFormatter;
+using System;
 using System.Collections.Generic;
 using System.CommandLine.Rendering;
 using System.Linq;
@@ -15,7 +16,7 @@ namespace Egret.Cli.Processing
     {
         private readonly LiterateSerializer literateSerializer;
 
-        private static readonly Interval ExecutionGrade = new Interval(10, 1);
+        private static readonly Interval ExecutionTimeGrade = new Interval(10, 1);
 
         public ConsoleResultFormatter(LiterateSerializer literateSerializer)
         {
@@ -36,7 +37,7 @@ namespace Egret.Cli.Processing
                 Space,
                 result.Context.Suite.Name.AsTextSpan(),
                 index.ToString("\\.##0: ").AsTextSpan(),
-                performance.ToString("{0.00 s} ").StyleGrade(performance, ExecutionGrade),
+                performance.ToString("{0.00 s} ").StyleGrade(performance, ExecutionTimeGrade),
                 "for ".AsTextSpan(),
                 result.Context.ToolName.StyleValue(),
                 " with ".AsTextSpan(),
@@ -52,7 +53,7 @@ namespace Egret.Cli.Processing
                 yield return new ContainerSpan(
                     NewLine,
                     SoftTab,
-                    ($" - ").AsTextSpan(),
+                    " - ".AsTextSpan(),
                     error.StyleFailure()
                 );
             }
@@ -104,12 +105,21 @@ namespace Egret.Cli.Processing
                         : new ContainerSpan(" matches ".AsTextSpan(), assertion.MatchedKey.StyleValue())
                 );
 
-                if (assertion is FailedAssertion f)
+                yield return assertion switch
                 {
-                    yield return ": ".AsTextSpan();
-                    yield return string.Join(", ", f.Reasons).StyleFailure();
-                }
-
+                    FailedAssertion f => new ContainerSpan(
+                        ": ".AsTextSpan(),
+                        f.Reasons.JoinWithComma().StyleFailure()
+                    ),
+                    ErrorAssertion e => new ContainerSpan(
+                        ": ".AsTextSpan(),
+                        "Error".StyleHighlight(BackgroundColorSpan.Red()),
+                        Space,
+                        e.Reasons.JoinWithComma().StyleFailure()
+                    ),
+                    SuccessfulAssertion _ => TextSpan.Empty(),
+                    _ => throw new InvalidOperationException(),
+                };
             }
         }
     }

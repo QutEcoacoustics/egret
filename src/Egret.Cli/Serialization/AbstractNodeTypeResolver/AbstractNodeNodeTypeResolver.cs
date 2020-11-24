@@ -9,13 +9,6 @@ using YamlDotNet.Serialization.NodeDeserializers;
 namespace Egret.Cli.Models
 {
 
-    public interface ITypeDiscriminator
-    {
-        Type BaseType { get; }
-
-        bool TryResolve(ParsingEventBuffer buffer, out Type suggestedType);
-    }
-
     public class AbstractNodeNodeTypeResolver : INodeDeserializer
     {
         private readonly INodeDeserializer original;
@@ -119,79 +112,6 @@ namespace Egret.Cli.Models
             {
                 throw new InvalidOperationException($"The type resolver for AbstractNodeNodeTypeResolver returned a type ({candidateType}) that is not a valid sub type of {baseType}");
             }
-        }
-    }
-
-    public static class IParserExtensions
-    {
-        public static bool TryFindMappingEntry(this ParsingEventBuffer parser, Func<Scalar, bool> selector, out Scalar key, out ParsingEvent value)
-        {
-            parser.Consume<MappingStart>();
-            do
-            {
-                // so we only want to check keys in this mapping, don't descend
-                switch (parser.Current)
-                {
-                    case Scalar scalar:
-                        // we've found a scalar, check if it's value matches one
-                        // of our  predicate
-                        var keyMatched = selector(scalar);
-
-                        // move head so we can read or skip value
-                        parser.MoveNext();
-
-                        // read the value of the mapping key
-                        if (keyMatched)
-                        {
-                            // success
-                            value = parser.Current;
-                            key = scalar;
-                            return true;
-                        }
-
-                        // skip the value
-                        parser.SkipThisAndNestedEvents();
-
-                        break;
-                    case MappingStart or SequenceStart:
-                        parser.SkipThisAndNestedEvents();
-                        break;
-                    default:
-                        // do nothing, skip to next node
-                        parser.MoveNext();
-                        break;
-                }
-            } while (parser.Current is not null);
-
-            key = null;
-            value = null;
-            return false;
-        }
-    }
-
-    public class ParsingEventBuffer : IParser
-    {
-        private readonly LinkedList<ParsingEvent> buffer;
-
-        private LinkedListNode<ParsingEvent> current;
-
-        public ParsingEventBuffer(LinkedList<ParsingEvent> events)
-        {
-            buffer = events;
-            current = events.First;
-        }
-
-        public ParsingEvent Current => current?.Value;
-
-        public bool MoveNext()
-        {
-            current = current.Next;
-            return current is not null;
-        }
-
-        public void Reset()
-        {
-            current = buffer.First;
         }
     }
 }

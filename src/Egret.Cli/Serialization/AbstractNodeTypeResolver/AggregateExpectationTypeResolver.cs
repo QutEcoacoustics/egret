@@ -62,7 +62,7 @@ namespace Egret.Cli.Serialization
                 return childType;
             }
 
-            var known = string.Join(", ", typeLookup.Keys);
+            var known = (typeLookup.Keys).JoinWithComma();
             throw new Exception($"Could not match `{targetKey}: {value} to a known expectation. Expecting one of: {known}");
         }
     }

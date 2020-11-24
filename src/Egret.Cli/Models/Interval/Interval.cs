@@ -9,6 +9,7 @@ using YamlDotNet.Serialization;
 using Egret.Cli.Maths;
 using LanguageExt;
 using static Egret.Cli.Models.Topology;
+using static Egret.Cli.Models.IntersectionDetails;
 using System.Collections.Generic;
 using MoreLinq;
 
@@ -22,6 +23,14 @@ namespace Egret.Cli.Models
         {
             Minimum = minimum;
             Maximum = maximum;
+            Middle = (minimum, maximum).Center();
+        }
+
+        public Interval(double minimum, double maximum, Topology topology) : this()
+        {
+            Minimum = minimum;
+            Maximum = maximum;
+            Topology = topology;
             Middle = (minimum, maximum).Center();
         }
 
@@ -65,14 +74,49 @@ namespace Egret.Cli.Models
                 Topology = Inclusive,
             };
         }
+        public static Interval Empty(double value)
+        {
+            return new Interval()
+            {
+                Maximum = value,
+                Minimum = value,
+                Middle = value,
+                // anything other than Inclusive is Empty (as per IsEmpty below)
+                Topology = Exclusive,
+            };
+        }
 
         public static Interval FromTolerance(double value, double tolerance)
         {
             return new Interval()
             {
-                Maximum = value - tolerance,
-                Minimum = value + tolerance,
-                Middle = value
+                Minimum = value - tolerance,
+                Maximum = value + tolerance,
+                Middle = value,
+                Topology = Inclusive
+            };
+        }
+
+        public static Interval Approximation(double value)
+        {
+            var fivePercent = value * 0.05;
+            return new Interval()
+            {
+                Minimum = value - fivePercent,
+                Maximum = value + fivePercent,
+                Middle = value,
+                Topology = Inclusive
+            };
+        }
+
+        public static Interval SameOrderOfMagnitudeAs(double value)
+        {
+            return new Interval()
+            {
+                Minimum = Math.Pow(value, 0.1),
+                Maximum = Math.Pow(value, 10),
+                Middle = value,
+                Topology = Inclusive
             };
         }
 
@@ -98,18 +142,15 @@ namespace Egret.Cli.Models
             };
         }
 
+        private static readonly byte[] approximateSymbol = Encoding.UTF8.GetBytes("≈");
+        private static readonly byte[] greaterEqualSymbol = Encoding.UTF8.GetBytes("≥");
+        private static readonly byte[] lessEqualSymbol = Encoding.UTF8.GetBytes("≤");
+        private static readonly byte[] toleranceSymbol = Encoding.UTF8.GetBytes("±");
+        private static readonly byte[] epsilonSymbol = Encoding.UTF8.GetBytes("ε");
+
         public static Interval FromString(ReadOnlySpan<byte> toParse, double defaultTolerance)
         {
-            // 1±0.2
-            // '>1'
-            // '<1'
-            // '≥1'
-            // '≤1'
-            // 1±ε
-            // '[1, 2]'
-            // '(1, 2]'
-            // '[1, 2)'
-            // '(1, 2)'
+            // see docs/interval.ebnf for valid formats we can parse here
             string error = null;
             if (ParseNumber(toParse, out var number, out var consumed))
             {
@@ -122,10 +163,13 @@ namespace Egret.Cli.Models
 
                 // tolerance
                 var next = toParse[consumed..];
-                if (next[0] is not (byte)'±')
+                if (!next.StartsWith(toleranceSymbol))
                 {
                     error = "'±' not found after number";
                 }
+
+                consumed += toleranceSymbol.Length;
+                next = next[toleranceSymbol.Length..];
 
 
                 if (!ParseNumber(next, out var tolerance, out var consumedNext))
@@ -147,6 +191,10 @@ namespace Egret.Cli.Models
                 return bounded;
 
             }
+            else if (ParseApproximation(toParse, out var approximation, ref error))
+            {
+                return approximation;
+            }
             else if (ParseRelational(toParse, out var relational, ref error))
             {
                 // relational
@@ -154,21 +202,65 @@ namespace Egret.Cli.Models
             }
             else
             {
-                error = "Unknown format";
+                error ??= "Unknown format";
             }
 
             throw new ArgumentException($"Failed to parse `{toParse.ToString()}` as an interval. {error}");
 
             bool ParseNumber(ReadOnlySpan<byte> span, out double value, out int consumed)
             {
-                if (span.StartsWith(Encoding.UTF8.GetBytes("ε")))
+                if (span.StartsWith(epsilonSymbol))
                 {
-                    consumed = 1;
+                    consumed = epsilonSymbol.Length;
                     value = defaultTolerance;
                     return true;
                 }
 
                 return Utf8Parser.TryParse(span, out value, out consumed);
+            }
+
+            bool ParseApproximation(ReadOnlySpan<byte> span, out Interval value, ref string error)
+            {
+                ReadOnlySpan<byte> next;
+                Func<double, Interval> factory;
+
+                if (span[0] is (byte)'~')
+                {
+
+                    next = span[1..];
+                    factory = SameOrderOfMagnitudeAs;
+
+                }
+                else if (span.StartsWith(approximateSymbol))
+                {
+
+                    next = span[approximateSymbol.Length..];
+                    factory = Approximation;
+                }
+                else
+                {
+                    value = default;
+                    error = null;
+                    return false;
+                }
+
+
+                if (!ParseNumber(next, out var number, out var consumed))
+                {
+                    value = default;
+                    error = $" `{span.ToString()}` is not a valid number";
+                    return false;
+                };
+
+                if (consumed != next.Length)
+                {
+                    value = default;
+                    error = $"Characters left over: {next.ToString()}";
+                    return false;
+                }
+
+                value = factory.Invoke(number);
+                return true;
             }
 
             bool ParseRelational(ReadOnlySpan<byte> span, out Interval value, ref string error)
@@ -178,37 +270,37 @@ namespace Egret.Cli.Models
                 bool lowAnchor;
                 if (span[0] is (byte)'>')
                 {
-                    topology = Topology.MinimumExclusiveMaximumInclusive;
+                    topology = MinimumExclusiveMaximumInclusive;
                     next = span[1..];
                     lowAnchor = true;
 
                 }
                 else if (span[0] is (byte)'<')
                 {
-                    topology = Topology.MinimumExclusiveMaximumInclusive;
+                    topology = MinimumExclusiveMaximumInclusive;
                     next = span[1..];
                     lowAnchor = false;
                 }
-                else if (span.StartsWith(Encoding.UTF8.GetBytes("≤")))
+                else if (span.StartsWith(lessEqualSymbol))
                 {
-                    topology = Topology.Inclusive;
-                    next = span[2..];
+                    topology = Inclusive;
+                    next = span[lessEqualSymbol.Length..];
                     lowAnchor = false;
                 }
-                else if (span.StartsWith(Encoding.UTF8.GetBytes("≥")))
+                else if (span.StartsWith(greaterEqualSymbol))
                 {
-                    topology = Topology.Inclusive;
-                    next = span[2..];
+                    topology = Inclusive;
+                    next = span[greaterEqualSymbol.Length..];
                     lowAnchor = true;
                 }
                 else
                 {
                     value = default;
-                    error = "Unknown relational operator. Must be one of >, <, ≥, ≤";
+                    error = null;
                     return false;
                 }
 
-                if (!ParseNumber(span[1..], out var anchor, out var consumed))
+                if (!ParseNumber(next, out var anchor, out var consumed))
                 {
                     value = default;
                     error = $" `{span.ToString()}` is not a valid number";
@@ -226,6 +318,7 @@ namespace Egret.Cli.Models
                 {
                     Minimum = lowAnchor ? anchor : double.NegativeInfinity,
                     Maximum = lowAnchor ? double.PositiveInfinity : anchor,
+                    Middle = anchor,
                     Topology = topology
                 };
                 return true;
@@ -245,7 +338,7 @@ namespace Egret.Cli.Models
 
                 if (!topology.HasValue)
                 {
-                    error = "Unknown interval notation";
+                    error = null;
                     return false;
                 }
 
@@ -304,12 +397,30 @@ namespace Egret.Cli.Models
 
         public double Range => Maximum - Minimum;
 
+        public double Radius => Math.Abs(Minimum - Maximum) / 2;
+
         public bool IsMinimumInclusive => Topology.IsMinimumInclusive();
 
         public bool IsMaximumInclusive => Topology.IsMaximumInclusive();
 
         public bool IsDegenerate => Minimum == Maximum && Topology == Inclusive;
         public bool IsEmpty => Minimum == Maximum && Topology != Inclusive;
+
+        public bool IsProper => !IsDegenerate && !IsEmpty;
+
+        public bool IsLeftBounded => Minimum != double.NegativeInfinity;
+        public bool IsRightBounded => Maximum != double.NegativeInfinity;
+        public bool IsBounded => IsLeftBounded && IsRightBounded;
+
+        public (Interval Lower, Interval Point, Interval Upper) Partition(double point)
+        {
+            return (
+                    new Interval(Math.Min(Minimum, point), point, Topology.OpenMaximum()),
+                    Empty(point),
+                    new Interval(point, Math.Max(Maximum, point), Topology.OpenMinimum())
+                );
+        }
+
 
         /// <summary>
         /// Gets the largest open interval (excluding endpoints) within the bounds of the current interval.
@@ -337,12 +448,12 @@ namespace Egret.Cli.Models
         }
 
 
-        public bool IntersectsWith(Interval b)
+        public bool IntersectsWith(Interval other)
         {
             var a1 = Minimum;
             var a2 = Maximum;
-            var b1 = b.Minimum;
-            var b2 = b.Maximum;
+            var b1 = other.Minimum;
+            var b2 = other.Maximum;
 
             // there are 9 possible placements we care about
             return this switch
@@ -354,9 +465,9 @@ namespace Egret.Cli.Models
                 // B==A         B and A are exactly equal
                 _ when a1 == b1 && a2 == b2 => true,
                 // AB           touching, possibly overlapping
-                var a when a2 == b1 => a.Topology.IsCompatibleWith(b.Topology),
+                var a when a2 == b1 => a.Topology.IsCompatibleWith(other.Topology),
                 // BA           touching, possibly overlapping
-                var a when a1 == b2 => b.Topology.IsCompatibleWith(a.Topology),
+                var a when a1 == b2 => other.Topology.IsCompatibleWith(a.Topology),
                 // B--A--B      B wholly contains A
                 _ when b1 < a1 && a2 < b1 => true,
                 // A--B--A      A wholly contains B
@@ -368,10 +479,100 @@ namespace Egret.Cli.Models
                 _ => throw new InvalidOperationException()
             };
         }
+
+        // public IntersectionDetails GetIntersection(Interval other)
+        // {
+        //     var a1 = Minimum;
+        //     var a2 = Maximum;
+        //     var b1 = other.Minimum;
+        //     var b2 = other.Maximum;
+
+        //     // there are 9 possible placements we care about
+        //     return this switch
+        //     {
+        //         // A  B         non-overlapping
+        //         _ when a2 < b1 => FullyBelow,
+        //         // B  A         non-overlapping
+        //         _ when b2 < a1 => FullyAbove,
+        //         // B==A         B and A are exactly equal
+        //         _ when a1 == b1 && a2 == b2 => Intersecting,
+        //         // AB           touching, possibly overlapping
+        //         var a when a2 == b1 => a.Topology.IsCompatibleWith(other.Topology),
+        //         // BA           touching, possibly overlapping
+        //         var a when a1 == b2 => other.Topology.IsCompatibleWith(a.Topology),
+        //         // B--A--B      B wholly contains A
+        //         _ when b1 < a1 && a2 < b1 => true,
+        //         // A--B--A      A wholly contains B
+        //         _ when a1 < b1 && b2 < a2 => true,
+        //         // A--B==A--B   A and B overlap
+        //         _ when b1 < a2 => true,
+        //         // B--A==B--A   B and A overlap
+        //         _ when a1 < b2 => true,
+        //         _ => throw new InvalidOperationException()
+        //     };
+        // }
+
+        // public Interval Union(Interval other)
+        // {
+
+        // }
+
     }
 
     public static class IntervalExtensions
     {
         public static bool IntersectsWith(this double value, Interval interval) => interval.Contains(value);
+    }
+
+    [Flags]
+    public enum IntersectionDetails : byte
+    {
+        /// <summary>
+        /// A does not overlap with B
+        /// </summary>
+        Disjoint = 0,
+
+        /// <summary>
+        /// A does overlaps with B
+        /// </summary>
+        Intersecting = 1,
+
+        /// <summary>
+        /// A contains B
+        /// </summary>
+        Contains = 2,
+
+        /// <summary>
+        /// A is contained by B
+        /// </summary>
+        ContainedBy = 4,
+
+        /// <summary>
+        /// If either <see cref="Superset" /> or <see cref="Subset" /> is set
+        /// then proper indicates that the endpoints of A and B do not touch.
+        /// </summary>
+        Proper = 8,
+
+        /// <summary>
+        /// If A's minimum endpoint is the same as B's maximum endpoint.
+        /// If A and B have compatible topologies then they <see cref="Intersect" /> as well.
+        /// </summary>
+        MinEqualsMax = 16,
+        /// <summary>
+        /// If A's maximum endpoint is the same as B's minimum endpoint.
+        /// If A and B have compatible topologies then they <see cref="Intersect" /> as well.
+        /// </summary>
+        MaxEqualsMin = 32,
+
+        MinBelow = 64,
+        MaxBelow = 128,
+
+        FullyBelow = Disjoint | MinBelow | MaxBelow,
+        FullyAbove = Disjoint,
+        ProperSubset = Intersecting | ContainedBy | Proper,
+        Subset = Intersecting | ContainedBy,
+
+        ProperSuperset = Intersecting | Contains | Proper,
+        Superset = Intersecting | Contains,
     }
 }

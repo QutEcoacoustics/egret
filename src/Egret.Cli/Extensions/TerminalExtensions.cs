@@ -13,7 +13,7 @@ namespace Egret.Cli.Extensions
     {
 
 
-        public static ContainerSpan Rgb(this string @string, byte r, byte g, byte b)
+        public static ContainerSpan StyleRgb(this string @string, byte r, byte g, byte b)
         {
 
             return new ContainerSpan(
@@ -22,19 +22,19 @@ namespace Egret.Cli.Extensions
                 ForegroundColorSpan.Reset());
         }
 
-        public static ContainerSpan Color(this string @string, ForegroundColorSpan color)
+        public static ContainerSpan StyleColor(this string @string, ForegroundColorSpan color)
         {
             return new ContainerSpan(
                 color,
                 new ContentSpan(@string),
                 ForegroundColorSpan.Reset());
         }
-        public static ContainerSpan Highlight(this string @string, BackgroundColorSpan color)
+        public static ContainerSpan StyleHighlight(this string @string, BackgroundColorSpan color)
         {
             return new ContainerSpan(
                 color,
                 new ContentSpan(@string),
-                ForegroundColorSpan.Reset());
+                BackgroundColorSpan.Reset());
         }
 
         public static ContainerSpan StyleValue(this string @string)

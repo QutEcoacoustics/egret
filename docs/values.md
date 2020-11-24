@@ -90,6 +90,7 @@ References: [number](#number)
 
 Examples: 
 - `~1.23` ➡ loosely approximate (within an order of magnitude) to 1.23  ➡ `(0.123, 12.3)`
+    - useful for logarithmic values
 - `≈1.23` ➡ approximately equal to 1.23. Defined as within `5%` of target value
     - `≈1.23` ➡ `(1.16, 1.29)`
     - `≈11025` ➡ `(10473, 11576)`

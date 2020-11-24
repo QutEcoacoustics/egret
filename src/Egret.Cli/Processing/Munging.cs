@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using YamlDotNet.Core.Tokens;
+using static LanguageExt.Prelude;
 
 namespace Egret.Cli.Processing
 {
@@ -57,6 +58,7 @@ namespace Egret.Cli.Processing
         {
             "low",
             "event low hertz",
+            "low frequency hertz",
             "low hertz",
             "min hz"
         };
@@ -73,6 +75,7 @@ namespace Egret.Cli.Processing
         {
             "high",
             "event high hertz",
+            "high frequency hertz",
             "high hertz",
             "max hz"
         };
@@ -92,15 +95,19 @@ namespace Egret.Cli.Processing
         };
 
         public static readonly IReadOnlyDictionary<string, Func<string, string>> NamingConventions = new Dictionary<string, Func<string, string>>() {
-            { "title case" , (x) =>  string.Join(' ', x.Split(' ').Select( x => char.ToUpperInvariant(x[0]) + x[1..])) },
-            { "snake case" , (x) => x.Replace(" ", "_") },
+            {
+                "title case",
+                memo((string x) => x.Split(' ').Select( x => char.ToUpperInvariant(x[0]) + x[1..]).Join(" ") )},
+            {
+                "snake case",
+                memo((string x) => x.Replace(" ", "_")) },
             {
                 "pascal case",
-                (x) => string.Join(string.Empty, x.Split(' ').Select( x => char.ToUpperInvariant(x[0]) + x[1..]))
+                memo((string x) => x.Split(' ').Select( x => char.ToUpperInvariant(x[0]) + x[1..]).JoinWithoutGap())
             },
         };
 
-        private static readonly string ConventionList = string.Join(",", NamingConventions.Keys);
+        private static readonly string ConventionList = NamingConventions.Keys.JoinWithComma();
 
         private static IEnumerable<string> GenerateNames(string name)
         {
@@ -132,7 +139,7 @@ namespace Egret.Cli.Processing
                 }
             }
 
-            return $"Could not find any property that matched the name label. Checked {names} and all {ConventionList} variants";
+            return $"Could not find a property with a name like `{names.First()}`. Checked { allNames.Join(", ", "`") }";
         }
     }
 }

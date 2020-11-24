@@ -12,6 +12,7 @@
 		"omnisharp.enableImportCompletion": true,
 		"editor.formatOnSave": true,
 		"cSpell.words": [
+			"Deserializers",
 			"Intrinsics",
 			"Parallelization",
 			"Partitioner",

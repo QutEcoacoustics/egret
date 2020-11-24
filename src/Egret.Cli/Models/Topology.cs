@@ -64,5 +64,49 @@ namespace Egret.Cli.Models
             return left.IsMaximumInclusive() || right.IsMinimumInclusive();
         }
 
+        public static Topology CloseMinimum(this Topology topology)
+        {
+            return topology switch
+            {
+                Topology.MinimumInclusiveMaximumExclusive or Topology.Inclusive => topology,
+                Topology.MinimumExclusiveMaximumInclusive => Topology.Inclusive,
+                Topology.Exclusive => Topology.MinimumInclusiveMaximumExclusive,
+                _ => throw new System.InvalidOperationException(),
+            };
+        }
+
+        public static Topology CloseMaximum(this Topology topology)
+        {
+            return topology switch
+            {
+                Topology.MinimumExclusiveMaximumInclusive or Topology.Inclusive => topology,
+                Topology.MinimumInclusiveMaximumExclusive => Topology.Inclusive,
+                Topology.Exclusive => Topology.MinimumExclusiveMaximumInclusive,
+                _ => throw new System.InvalidOperationException(),
+            };
+        }
+
+        public static Topology OpenMinimum(this Topology topology)
+        {
+            return topology switch
+            {
+                Topology.MinimumExclusiveMaximumInclusive or Topology.Exclusive => topology,
+                Topology.MinimumInclusiveMaximumExclusive => Topology.Exclusive,
+                Topology.Inclusive => Topology.MinimumExclusiveMaximumInclusive,
+                _ => throw new System.InvalidOperationException(),
+            };
+        }
+
+        public static Topology OpenMaximum(this Topology topology)
+        {
+            return topology switch
+            {
+                Topology.MinimumInclusiveMaximumExclusive or Topology.Exclusive => topology,
+                Topology.MinimumExclusiveMaximumInclusive => Topology.Exclusive,
+                Topology.Inclusive => Topology.MinimumInclusiveMaximumExclusive,
+                _ => throw new System.InvalidOperationException(),
+            };
+        }
+
     }
 }
