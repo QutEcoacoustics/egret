@@ -28,7 +28,7 @@ namespace Egret.Cli.Models
             Keys = keys;
         }
 
-        IEnumerable<string> Keys { get; init; }
+        public IEnumerable<string> Keys { get; init; }
     }
 
 

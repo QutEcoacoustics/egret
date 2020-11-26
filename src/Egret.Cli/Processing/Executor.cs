@@ -33,7 +33,7 @@ namespace Egret.Cli.Processing
 
 
 
-        public async Task<List<TestCaseResult>> RunSuiteAsync(Config config, bool parallel = false)
+        public async Task<List<TestCaseResult>> RunSuiteAsync(Config config)
         {
             logger.LogTrace("Generating tasks");
             var cases = GenerateTasks(config).ToArray();

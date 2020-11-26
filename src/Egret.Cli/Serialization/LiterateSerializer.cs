@@ -13,12 +13,10 @@ namespace Egret.Cli.Serialization
 {
     public class LiterateSerializer
     {
-        private readonly ILogger<Deserializer> Logger;
         private readonly ISerializer YamlSerializer;
 
-        public LiterateSerializer(ILogger<Deserializer> logger, IOptions<AppSettings> settings)
+        public LiterateSerializer(IOptions<AppSettings> settings)
         {
-            this.Logger = logger;
             this.YamlSerializer = new SerializerBuilder()
                 .WithNamingConvention(UnderscoredNamingConvention.Instance)
                 .WithEventEmitter(next => new FlowEverythingEmitter(next))

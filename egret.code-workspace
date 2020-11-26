@@ -17,7 +17,11 @@
 			"Parallelization",
 			"Partitioner",
 			"Serilog",
-			"Succ"
+			"Succ",
+			"editorconfig",
+			"msbuild",
+			"nuget",
+			"omnisharp"
 		]
 	},
 	"extensions": {
