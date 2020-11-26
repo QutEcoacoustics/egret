@@ -1,4 +1,5 @@
 using Egret.Cli.Models;
+using LanguageExt;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,6 +23,7 @@ namespace Egret.Cli.Processing
     public record TestContext(
         Suite Suite,
         string ToolName,
+        Option<string> ToolVersion,
         string SourceName,
         TimeSpan ExecutionTime);
 }

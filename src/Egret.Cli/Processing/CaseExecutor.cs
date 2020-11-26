@@ -72,6 +72,7 @@ namespace Egret.Cli.Processing
                 var errors = new List<string>();
                 List<ExpectationResult> expectationResults = new();
                 bool success;
+                Option<string> toolVersion = default;
                 try
                 {
                     var file = await ResolveSourceAsync();
@@ -90,6 +91,7 @@ namespace Egret.Cli.Processing
                         expectationResults = AssessResults(Case.Expect, analysisresults);
 
                     }
+                    toolVersion = toolResult.Version;
 
                     success = toolResult.Success && expectationResults.All(x => x.Successful);
                 }
@@ -111,6 +113,7 @@ namespace Egret.Cli.Processing
                     new TestContext(
                         Suite,
                         Tool.Name,
+                        toolVersion,
                         source,
                         timer.Stop()
                     )

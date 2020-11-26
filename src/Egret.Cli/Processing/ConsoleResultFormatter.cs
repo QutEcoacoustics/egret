@@ -40,6 +40,10 @@ namespace Egret.Cli.Processing
                 performance.ToString("{0.00 s} ").StyleGrade(performance, ExecutionTimeGrade),
                 "for ".AsTextSpan(),
                 result.Context.ToolName.StyleValue(),
+                result.Context.ToolVersion.Match(
+                    v => new ContainerSpan(" (".AsTextSpan(), v.StyleNumber(), ")".AsTextSpan()),
+                    TextSpan.Empty()
+                ),
                 " with ".AsTextSpan(),
                 result.Context.SourceName.StyleValue(),
                 new ContainerSpan(formattedErrors.Concat(formattedEventResults).Concat(formattedAggregateResults).ToArray())

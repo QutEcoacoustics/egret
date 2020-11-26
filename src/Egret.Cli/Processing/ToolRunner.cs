@@ -11,6 +11,9 @@ using Microsoft.Extensions.Options;
 using System.Threading;
 using Serilog;
 using Egret.Cli.Extensions;
+using System.Text.RegularExpressions;
+using static LanguageExt.Prelude;
+using LanguageExt;
 
 namespace Egret.Cli.Processing
 {
@@ -36,15 +39,20 @@ namespace Egret.Cli.Processing
             var placeholders = new CommandPlaceholders(source.FullName, outputDir.FullName, tempDir.FullName);
             var arguments = PrepareArguments(tool.Command, suiteConfig, placeholders);
 
-            logger.LogTrace("Starting process: {tool} {args}", tool.Executable, arguments);
-            var stopWatch = Stopwatch.StartNew();
-            var processResult = await ExecuteShellCommand(tool.Executable, arguments, timeout, tempDir);
-            stopWatch.Stop();
+            logger.LogTrace("Running process: {tool} {args}", tool.Executable, arguments);
+            ProcessResult processResult;
+            using (var timer = logger.Measure("Running process"))
+            {
+                processResult = await ExecuteShellCommand(tool.Executable, arguments, timeout, tempDir);
+            }
+
+            var version = GetVersion(tool.VersionRegex, processResult);
+
 
             logger.LogDebug("Finished process {tool} {args} with result {exitCode}", tool.Executable, arguments, processResult.ExitCode);
             logger.LogTrace("Process detail: {@process}", processResult);
 
-            return new ToolResult(processResult.Success, outputDir, processResult.Exception);
+            return new ToolResult(processResult.Success, outputDir, processResult.Exception, version);
         }
 
         public string PrepareArguments(string args, Dictionary<string, object> suiteConfig, CommandPlaceholders placeholders)
@@ -142,6 +150,31 @@ namespace Egret.Cli.Processing
             }
         }
 
+        public static Option<string> GetVersion(Regex versionPattern, ProcessResult result)
+        {
+            if (result.Output is not null)
+            {
+                var match = versionPattern.Match(result.Output);
+
+                if (match.Success)
+                {
+                    return match.Groups[1].Value;
+                }
+            }
+
+            if (result.Error is not null)
+            {
+                var match = versionPattern.Match(result.Error);
+
+                if (match.Success)
+                {
+                    return match.Groups[1].Value;
+                }
+            }
+
+            return None;
+        }
+
         public record ProcessResult
         {
             public ProcessResult(bool completed, int? exitCode, string output, string error, Exception exception)
@@ -165,20 +198,7 @@ namespace Egret.Cli.Processing
 
     }
 
-    public record ToolResult
-    {
-        public ToolResult(bool success, DirectoryInfo results, Exception exception)
-        {
-            Success = success;
-            Results = results;
-            Exception = exception;
-        }
-
-        public bool Success { get; }
-
-        public DirectoryInfo Results { get; }
-        public Exception Exception { get; }
-    }
+    public record ToolResult(bool Success, DirectoryInfo Results, Exception Exception, Option<string> Version);
 
     public record CommandPlaceholders(string Source, string Output, string TempDir);
 }

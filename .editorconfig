@@ -1,6 +1,13 @@
 # Remove the line below if you want to inherit .editorconfig settings from higher directories
 root = true
 
+[*.yml,*.yaml]
+indent_size = 2
+indent_style = space
+tab_width = 2
+end_of_line = crlf
+insert_final_newline = true
+
 # C# files
 [*.cs]
 

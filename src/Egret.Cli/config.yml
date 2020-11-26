@@ -4,6 +4,8 @@ tools:
     executable: AnalysisPrograms.exe
     command: "audio2csv {source} {config} {output} --no-debug"
     result_pattern: "*.Events.beta.json"
+    # version 20.11.3.8
+    version_pattern: version (\d+\.\d+\.\d+\.\d+)
   # avianz:
   #   executable: "echo.exe"
   #   command: "{source} {config} {output} {tempdir}"
