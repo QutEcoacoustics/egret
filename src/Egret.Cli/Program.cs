@@ -2,27 +2,13 @@
 using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Hosting;
-using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Egret.Cli.Commands;
-using System.Reflection;
-using System.CommandLine.Binding;
 using Egret.Cli.Extensions;
-using System.CommandLine.Rendering;
-using Serilog;
-using Egret.Cli.Serialization;
-using Serilog.Configuration;
-using Microsoft.Extensions.Configuration;
-using Egret.Cli.Processing;
-using Serilog.Sinks.SystemConsole.Themes;
-using System.CommandLine.Help;
-using Serilog.Events;
-using Serilog.Extensions.Logging;
 using Egret.Cli.Hosting;
 using System.Text;
 
@@ -58,7 +44,11 @@ namespace Egret.Cli
                 new Command("version", description: "get the version of egret"),
                 new Command("test", "Run egret tests")
                 {
-                    configArg
+                    configArg,
+                    new Option<DirectoryInfo>("--output", description: "Set the directory to write reports to").WithAlias("-o"),
+                    new Option<bool>("--json", description: "Output results to a json file").WithAlias("-j"),
+                    new Option<bool>("--console", description: "Output results in the console").WithAlias("-c"),
+                    new Option<bool>("--html", description: "Output results to a HTML file").WithAlias("-h"),
                 },
                 new Command("watch", "Runs egret tests every time a change is found")
                 {
@@ -81,11 +71,5 @@ namespace Egret.Cli
 
             return builder;
         }
-
-
-
-
-
-
     }
 }

@@ -1,4 +1,5 @@
-﻿using Egret.Cli.Extensions;
+using Egret.Cli.Extensions;
+using Egret.Cli.Formatters;
 using Egret.Cli.Hosting;
 using Egret.Cli.Processing;
 using Egret.Cli.Serialization;
@@ -24,6 +25,14 @@ namespace Egret.Cli.Commands
     public class TestCommandOptions
     {
         public FileInfo Configuration { get; set; }
+
+        public DirectoryInfo Output { get; set; } = new DirectoryInfo(Environment.CurrentDirectory);
+
+        public bool Html { get; set; }
+
+        public bool Json { get; set; }
+
+        public bool Console { get; set; } = true;
     }
 
 
@@ -34,16 +43,18 @@ namespace Egret.Cli.Commands
         private readonly Deserializer serializer;
         private readonly ILogger<TestCommand> logger;
         private readonly EgretConsole console;
-        private readonly ConsoleResultFormatter consoleResultFormatter;
+        private readonly MetaFormatter resultFormatter;
 
-        public TestCommand(ILogger<TestCommand> logger, EgretConsole console, Deserializer serializer, TestCommandOptions options, Executor executor, ConsoleResultFormatter consoleResultFormatter)
+        public TestCommand(ILogger<TestCommand> logger, EgretConsole console, Deserializer serializer, TestCommandOptions options, Executor executor, MetaFormatter metaFormatter
+        )
         {
-            this.consoleResultFormatter = consoleResultFormatter;
             this.serializer = serializer;
             this.options = options;
             this.executor = executor;
             this.logger = logger;
             this.console = console;
+
+            this.resultFormatter = metaFormatter;
         }
         public async Task<int> InvokeAsync(InvocationContext context)
         {
@@ -60,12 +71,12 @@ namespace Egret.Cli.Commands
             var results = await executor.RunSuiteAsync(config);
 
             // summarize results
-            console.WriteLine("Results".StyleUnderline());
+            await resultFormatter.WriteResultsHeader();
 
             int successes = 0, failures = 0, count = 0;
             foreach (var result in results)
             {
-                console.WriteLine(consoleResultFormatter.Format(count, result));
+                await resultFormatter.WriteResult(count, result);
                 count++;
                 switch (result.Success)
                 {
@@ -74,14 +85,7 @@ namespace Egret.Cli.Commands
                 }
             }
 
-            var resultSpan = (successes / (double)results.Count).ToString("P").StyleNumber();
-            console.WriteRichLine($@"
-Finished. Final results:
-{EgretConsole.Tab}Successes: {successes}
-{EgretConsole.Tab}Failures:{failures.ToString().StyleFailure()}
-{EgretConsole.Tab}Result: {resultSpan}");
-
-            // write report
+            await resultFormatter.WriteResultsFooter(count, successes, failures);
 
             logger.LogDebug("Received {count} results from executor", results);
 

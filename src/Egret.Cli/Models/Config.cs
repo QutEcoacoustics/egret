@@ -17,7 +17,7 @@ namespace Egret.Cli.Models
 
         public Dictionary<string, Suite> TestSuites { get; init; }
 
-        public Dictionary<string, Case[]> CommonCases { get; init; }
+        public Dictionary<string, TestCase[]> CommonCases { get; init; }
 
         /// <summary>
         /// Stores the FileInfo (and path) to the file from which this config was read.

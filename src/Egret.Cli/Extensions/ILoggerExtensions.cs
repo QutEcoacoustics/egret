@@ -13,6 +13,12 @@ namespace Egret.Cli.Extensions
             return new MeasureStopWatch<T>(logger, name);
         }
 
+        public static U PassThrough<T, U>(this ILogger<T> logger, in U value, string message, LogLevel logLevel = LogLevel.Information)
+        {
+            logger.Log(logLevel, message, value);
+            return value;
+        }
+
         public sealed class MeasureStopWatch<T> : IDisposable
         {
             private readonly Stopwatch stopWatch;
@@ -23,21 +29,20 @@ namespace Egret.Cli.Extensions
             {
                 this.name = name;
 
-                this.stopWatch = Stopwatch.StartNew();
+                stopWatch = Stopwatch.StartNew();
                 this.logger = logger;
-                //this.logger.BeginScope(this);
             }
 
             public void Dispose()
             {
-                this.stopWatch.Stop();
-                this.logger.LogInformation("{name} took {time}", name, stopWatch.Elapsed);
+                stopWatch.Stop();
+                logger.LogInformation("{name} took {time}", name, stopWatch.Elapsed);
             }
 
             public TimeSpan Stop()
             {
-                this.stopWatch.Stop();
-                return this.stopWatch.Elapsed;
+                stopWatch.Stop();
+                return stopWatch.Elapsed;
             }
         }
     }

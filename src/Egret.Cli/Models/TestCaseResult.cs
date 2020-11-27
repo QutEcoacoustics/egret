@@ -3,6 +3,7 @@ using LanguageExt;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using static Egret.Cli.Processing.CaseExecutor;
 
 namespace Egret.Cli.Processing
 {
@@ -21,9 +22,11 @@ namespace Egret.Cli.Processing
 
 
     public record TestContext(
-        Suite Suite,
+        string SuiteName,
         string ToolName,
-        Option<string> ToolVersion,
+        string ToolVersion,
         string SourceName,
+        int ExecutionIndex,
+        CaseTracker CaseTracker,
         TimeSpan ExecutionTime);
 }

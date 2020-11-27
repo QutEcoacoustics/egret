@@ -25,12 +25,12 @@ namespace Egret.Cli.Models
 
         public string DefaultLabel { get; init; }
 
-        public Case[] Tests { get; init; }
+        public TestCase[] Tests { get; init; }
 
         public string[] IncludeCases { get; init; } = Array.Empty<string>();
 
         [YamlIgnore]
-        public Dictionary<string, Case[]> SharedCases { get; init; } = new();
+        public Dictionary<string, TestCase[]> SharedCases { get; init; } = new();
 
         public Dictionary<string, Dictionary<string, object>> ToolConfigs { get; init; }
 

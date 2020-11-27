@@ -22,20 +22,20 @@ namespace Egret.Cli.Processing
 
         public readonly struct CaseTracker
         {
-            public CaseTracker(ushort @case, ushort tool, ushort suite)
+            public CaseTracker(ushort testCase, ushort tool, ushort suite)
             {
-                Case = @case;
+                TestCase = testCase;
                 Tool = tool;
                 Suite = suite;
             }
 
-            ushort Case { get; }
+            ushort TestCase { get; }
             ushort Tool { get; }
             ushort Suite { get; }
 
             public override string ToString()
             {
-                return $"{Suite}.{Tool}.{Case}";
+                return $"{Suite}.{Tool}.{TestCase}";
             }
         }
 
@@ -48,7 +48,7 @@ namespace Egret.Cli.Processing
             this.http = httpClient;
         }
 
-        public Case Case { get; init; }
+        public TestCase Case { get; init; }
         public Suite Suite { get; init; }
         public Tool Tool { get; init; }
 
@@ -111,10 +111,12 @@ namespace Egret.Cli.Processing
                     errors,
                     expectationResults,
                     new TestContext(
-                        Suite,
+                        Suite.Name,
                         Tool.Name,
-                        toolVersion,
+                        (string)(toolVersion || null),
                         source,
+                        index,
+                        Tracker,
                         timer.Stop()
                     )
                 ));
@@ -125,8 +127,8 @@ namespace Egret.Cli.Processing
         {
             return Case switch
             {
-                Case { File: not null } c => ResolveLocal(c.File),
-                Case { Uri: not null } c => await FetchRemoteHttpFileAsync(c.Uri),
+                TestCase { File: not null } c => ResolveLocal(c.File),
+                TestCase { Uri: not null } c => await FetchRemoteHttpFileAsync(c.Uri),
                 _ => throw new InvalidOperationException($"Can't determine case source file")
             };
 

@@ -26,6 +26,7 @@ using Serilog.Extensions.Logging;
 using System.Net.Http;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using Egret.Cli.Formatters;
 
 namespace Egret.Cli.Hosting
 {
@@ -69,6 +70,9 @@ namespace Egret.Cli.Hosting
             services.AddSingleton<ToolRunner>();
 
             services.AddSingleton<ConsoleResultFormatter>();
+            services.AddSingleton<JsonResultFormatter>();
+            services.AddSingleton<HtmlResultFormatter>();
+            services.AddSingleton<MetaFormatter>();
         }
 
         private static LogEventLevel GetLogLevel(IServiceProvider provider)

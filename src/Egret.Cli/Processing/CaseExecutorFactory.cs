@@ -18,7 +18,7 @@ namespace Egret.Cli.Processing
             this.provider = provider;
         }
 
-        public CaseExecutor Create(Case @case, Tool tool, Suite suite, in CaseTracker tracker)
+        public CaseExecutor Create(TestCase @case, Tool tool, Suite suite, in CaseTracker tracker)
         {
             var instance = new CaseExecutor(
                 provider.GetRequiredService<ILogger<CaseExecutor>>(),
