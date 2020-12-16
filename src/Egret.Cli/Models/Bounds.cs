@@ -12,6 +12,14 @@ namespace Egret.Cli.Models
     /// <summary>
     public struct Bounds : IYamlConvertible
     {
+        public Bounds(Interval startSeconds, Interval endSeconds, Interval lowHertz, Interval highHertz)
+        {
+            StartSeconds = startSeconds;
+            EndSeconds = endSeconds;
+            LowHertz = lowHertz;
+            HighHertz = highHertz;
+        }
+
         public Interval StartSeconds { get; private set; }
 
         public Interval EndSeconds { get; private set; }

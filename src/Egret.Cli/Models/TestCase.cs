@@ -1,20 +1,18 @@
+using Egret.Cli.Serialization.Yaml;
 using System;
-using System.Collections.Generic;
-using YamlDotNet.RepresentationModel;
 
 namespace Egret.Cli.Models
 {
-    public class TestCase
+    public record TestCase : ISourceInfo
     {
-        public IExpectationTest[] Expect { get; init; } = Array.Empty<AggregateExpectation>();
+        public IExpectation[] Expect { get; init; } = Array.Empty<IExpectation>();
 
         public string File { get; init; }
 
         public Uri Uri { get; init; }
+        public string Name { get; init; }
 
+
+        public SourceInfo SourceInfo { get; set; }
     }
-
-
-
-
 }

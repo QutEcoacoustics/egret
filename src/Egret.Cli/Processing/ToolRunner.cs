@@ -21,6 +21,7 @@ namespace Egret.Cli.Processing
     {
         private readonly ILogger<ToolRunner> logger;
         private readonly TimeSpan timeout;
+        private readonly ArgumentQuoter tokenFormatter;
         private readonly TempFactory temp;
 
         public ToolRunner(ILogger<ToolRunner> logger, TempFactory temp, IOptions<AppSettings> appSettings)
@@ -28,7 +29,7 @@ namespace Egret.Cli.Processing
             this.temp = temp;
             this.logger = logger;
             this.timeout = appSettings.Value.ToolTimeout;
-
+            this.tokenFormatter = new ArgumentQuoter();
         }
 
         public async Task<ToolResult> Run(Tool tool, FileInfo source, Dictionary<string, object> suiteConfig)
@@ -52,7 +53,7 @@ namespace Egret.Cli.Processing
             logger.LogDebug("Finished process {tool} {args} with result {exitCode}", tool.Executable, arguments, processResult.ExitCode);
             logger.LogTrace("Process detail: {@process}", processResult);
 
-            return new ToolResult(processResult.Success, outputDir, processResult.Exception, version);
+            return new ToolResult(processResult.Success, outputDir, processResult, tool.Executable + " " + arguments, version);
         }
 
         public string PrepareArguments(string args, Dictionary<string, object> suiteConfig, CommandPlaceholders placeholders)
@@ -64,7 +65,7 @@ namespace Egret.Cli.Processing
 
 
             var parsedArgs = SegmentedString.Parse(args);
-            var formattedArgs = parsedArgs.Format(compositePlaceholders);
+            var formattedArgs = parsedArgs.Format(compositePlaceholders, formatter: tokenFormatter);
 
             logger.LogTrace("Formatted args: {args}", formattedArgs);
             return formattedArgs;
@@ -175,30 +176,59 @@ namespace Egret.Cli.Processing
             return None;
         }
 
-        public record ProcessResult
+        private class ArgumentQuoter : ITokenValueFormatter
         {
-            public ProcessResult(bool completed, int? exitCode, string output, string error, Exception exception)
+            public string Format(ISegment segment, object value, string Padding, string Format)
             {
-                Completed = completed;
-                ExitCode = exitCode;
-                Output = output;
-                Error = error;
-                Exception = exception;
+
+                if (segment is TokenSegment && value is string s && s.Contains(' '))
+                {
+                    return $"\"{s}\"";
+                }
+
+                return TokenValueFormatter.Default.Format(segment, value, Padding, Format);
             }
-
-            public bool Completed { get; init; }
-            public int? ExitCode { get; init; }
-            public string Output { get; init; }
-            public string Error { get; init; }
-
-            public Exception Exception { get; init; }
-
-            public bool Success => Completed && ExitCode == 0 && Exception is null;
         }
 
     }
 
-    public record ToolResult(bool Success, DirectoryInfo Results, Exception Exception, Option<string> Version);
+    public record ProcessResult
+    {
+        public ProcessResult(bool completed, int? exitCode, string output, string error, Exception exception)
+        {
+            Completed = completed;
+            ExitCode = exitCode;
+            Output = output;
+            Error = error;
+            Exception = exception;
+        }
+
+        public bool Completed { get; init; }
+        public int? ExitCode { get; init; }
+        public string Output { get; init; }
+        public string Error { get; init; }
+
+        public Exception Exception { get; init; }
+
+        public bool Success => Completed && ExitCode == 0 && Exception is null;
+    }
+
+    public partial record ToolResult(bool Success, DirectoryInfo Results, ProcessResult ProcessResult, string TemplatedCommand, Option<string> Version);
+
+    public partial record ToolResult
+    {
+        public string FormatError()
+        {
+            if (Success) { return string.Empty; }
+
+            var builder = new StringBuilder();
+            builder.Append($"Tool did not exit successfully ({ProcessResult.ExitCode}):");
+            builder.AppendLine(ProcessResult.Exception?.Message);
+            builder.AppendLine("Does the following command work by itself?");
+            builder.AppendLine(TemplatedCommand);
+            return builder.ToString();
+        }
+    }
 
     public record CommandPlaceholders(string Source, string Output, string TempDir);
 }

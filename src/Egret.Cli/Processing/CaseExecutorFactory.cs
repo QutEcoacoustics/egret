@@ -1,6 +1,7 @@
 
 using Egret.Cli.Hosting;
 using Egret.Cli.Models;
+using Egret.Cli.Serialization.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
@@ -22,10 +23,10 @@ namespace Egret.Cli.Processing
         {
             var instance = new CaseExecutor(
                 provider.GetRequiredService<ILogger<CaseExecutor>>(),
-                provider.GetRequiredService<EgretConsole>(),
                 provider.GetRequiredService<ToolRunner>(),
                 provider.GetRequiredService<TempFactory>(),
-                provider.GetRequiredService<HttpClient>()
+                provider.GetRequiredService<HttpClient>(),
+                provider.GetRequiredService<DefaultJsonSerializer>()
             )
             {
                 Case = @case,

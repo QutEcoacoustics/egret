@@ -379,18 +379,23 @@ namespace Egret.Cli.Models
 
         public override string ToString()
         {
-            var left = IsMinimumInclusive ? '[' : '(';
-            var right = IsMaximumInclusive ? ']' : ')';
-            return $"{left}{this.Minimum}, {this.Maximum}{right}";
+            return ToString(null);
         }
 
-        public string ToString(bool simplify)
+        public string ToString(string endPointFormat)
+        {
+            var left = IsMinimumInclusive ? '[' : '(';
+            var right = IsMaximumInclusive ? ']' : ')';
+            return $"{left}{this.Minimum.ToString(endPointFormat)}, {this.Maximum.ToString(endPointFormat)}{right}";
+        }
+
+        public string ToString(bool simplify, string endPointFormat = null)
         {
             return this switch
             {
-                _ when !simplify => ToString(),
-                { IsDegenerate: true } => Center.ToString(),
-                _ => ToString()
+                _ when !simplify => ToString(endPointFormat),
+                { IsDegenerate: true } => Center.ToString(endPointFormat),
+                _ => ToString(endPointFormat)
             };
         }
 
@@ -517,11 +522,6 @@ namespace Egret.Cli.Models
 
         // }
 
-    }
-
-    public static class IntervalExtensions
-    {
-        public static bool IntersectsWith(this double value, Interval interval) => interval.Contains(value);
     }
 
     [Flags]

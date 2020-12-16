@@ -60,6 +60,23 @@
             "args": [
                 "test",
                 "--very-verbose",
+                "C:\\Users\\Anthony\\Queensland University of Technology\\QUT Ecoacoustics - Recognizers Project\\5 GHFF\\3 Annotated testing files\\flying_fox.test.egret.yml"
+            ],
+            "cwd": "${workspaceFolder}/src/Egret.Cli",
+            // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
+            "name": "debug: egret watch",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            // If you have changed target frameworks, make sure to update the program path.
+            "program": "${workspaceFolder}/src/Egret.Cli/bin/Debug/net5.0/egret.dll",
+            "args": [
+                "watch",
+                "--very-verbose",
                 "config.yml"
             ],
             "cwd": "${workspaceFolder}/src/Egret.Cli",
@@ -72,6 +89,17 @@
             "type": "coreclr",
             "request": "attach",
             "processId": "${command:pickProcess}"
+        },
+        {
+            "name": ".NET Core Launch (test)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/tests/Egret.Tests/bin/Debug/net5.0/Egret.tests.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "stopAtEntry": false,
+            "console": "internalConsole"
         }
     ],
 }

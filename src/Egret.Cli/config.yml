@@ -13,7 +13,7 @@ tools:
 
 test_suites:
   boobook:
-    default_label: NinoxBoobook
+    label_aliases: ["Bookbook", "NinoxBoobook"]
     tool_configs:
       ap:
         config: Towsey.NinoxBoobook.yml
@@ -35,6 +35,12 @@ test_suites:
         expect:
           - segment_with: event_count
             count: 3
+    include_tests:
+      # include avianz manual annotations as test cases
+      #- from: "2 Files not in Ecosounds/*.data"
+      # include generic spreadsheet of manual annotations as test cases
+      #- from: "1 Ecosounds spreadsheet/Training_annotations_GHFF.xlsx"
+
     #       expect:
     #           - segment_with: no_events
     #       expect_events:
@@ -58,7 +64,7 @@ test_suites:
     #       # ...
     #include_cases: [geophony]
 
-common_cases:
+common_tests:
   geophony:
     - file: windy.wav
       expect:

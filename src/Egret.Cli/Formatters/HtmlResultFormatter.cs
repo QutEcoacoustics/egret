@@ -1,5 +1,7 @@
 using Egret.Cli.Processing;
 using System.Threading.Tasks;
+using Egret.Cli.Models.Results;
+
 
 namespace Egret.Cli.Formatters
 {
@@ -15,7 +17,7 @@ namespace Egret.Cli.Formatters
             throw new System.NotImplementedException();
         }
 
-        public ValueTask WriteResultsFooter(int count, int successes, int failures)
+        public ValueTask WriteResultsFooter(FinalResults finalResults)
         {
             throw new System.NotImplementedException();
         }

@@ -1,23 +1,23 @@
 using LanguageExt;
 using Egret.Cli.Extensions;
-using Egret.Cli.Hosting;
 using Egret.Cli.Models;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.CommandLine.Rendering;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.IO.Pipelines;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using Egret.Cli.Serialization.Json;
+using System.Text.Json;
+using Egret.Cli.Models.Results;
+using Egret.Cli.Models.Expectations;
 
 namespace Egret.Cli.Processing
 {
-    public class CaseExecutor : IAsyncInvokeable<TestCaseResult>
+    public class CaseExecutor : IAsyncInvokeable<TestCaseResult>, IDisposable
     {
 
         public readonly struct CaseTracker
@@ -39,13 +39,13 @@ namespace Egret.Cli.Processing
             }
         }
 
-        public CaseExecutor(ILogger<CaseExecutor> logger, Hosting.EgretConsole console, ToolRunner runner, TempFactory tempFactory, HttpClient httpClient)
+        public CaseExecutor(ILogger<CaseExecutor> logger, ToolRunner runner, TempFactory tempFactory, HttpClient httpClient, DefaultJsonSerializer resultDeserializer)
         {
             this.logger = logger;
-            this.console = console;
             this.tool = runner;
             this.tempFactory = tempFactory;
             this.http = httpClient;
+            this.resultDeserializer = resultDeserializer;
         }
 
         public TestCase Case { get; init; }
@@ -56,10 +56,10 @@ namespace Egret.Cli.Processing
 
 
         private readonly ILogger<CaseExecutor> logger;
-        private readonly EgretConsole console;
         private readonly ToolRunner tool;
         private readonly TempFactory tempFactory;
         private readonly HttpClient http;
+        private readonly DefaultJsonSerializer resultDeserializer;
 
         public async Task<TestCaseResult> InvokeAsync(int index, CancellationToken token)
         {
@@ -75,21 +75,21 @@ namespace Egret.Cli.Processing
                 Option<string> toolVersion = default;
                 try
                 {
-                    var file = await ResolveSourceAsync();
+                    var (file, newSource) = await ResolveSourceAsync();
+                    source = newSource ?? source;
 
                     var toolResult = await RunToolAsync(file);
                     if (!toolResult.Success)
                     {
-                        errors.Add("tool did not exit successfully:" + toolResult.Exception?.Message);
+                        errors.Add(toolResult.FormatError());
                     }
                     else
                     {
-                        var analysisresults = await LoadResultsAsync(toolResult).ToListAsync();
+                        var analysisresults = await LoadResultsAsync(toolResult).ToListAsync(token);
 
                         logger.LogInformation("Loaded {count} results", analysisresults.Count);
 
                         expectationResults = AssessResults(Case.Expect, analysisresults);
-
                     }
                     toolVersion = toolResult.Version;
 
@@ -102,18 +102,16 @@ namespace Egret.Cli.Processing
                     success = false;
                 }
 
-
-
                 logger.LogTrace("Finished case: {case} for tool: {tool}", source, Tool.Name);
-
 
                 return await Task.FromResult(new TestCaseResult(
                     errors,
                     expectationResults,
                     new TestContext(
                         Suite.Name,
+                        Case.Name ?? string.Empty,
                         Tool.Name,
-                        (string)(toolVersion || null),
+                        toolVersion.IfNoneUnsafe((string)null),
                         source,
                         index,
                         Tracker,
@@ -123,7 +121,7 @@ namespace Egret.Cli.Processing
             }
         }
 
-        private async ValueTask<FileInfo> ResolveSourceAsync()
+        private async ValueTask<(FileInfo File, string updatedSource)> ResolveSourceAsync()
         {
             return Case switch
             {
@@ -132,11 +130,14 @@ namespace Egret.Cli.Processing
                 _ => throw new InvalidOperationException($"Can't determine case source file")
             };
 
-            FileInfo ResolveLocal(string path)
+            (FileInfo File, string updatedSource) ResolveLocal(string path)
             {
                 if (!Path.IsPathFullyQualified(path))
                 {
-                    path = Path.Combine(Path.GetDirectoryName(Suite.Location), path);
+                    // nominally things are relative the config file
+                    // however for imported test cases the config file is virtual...
+                    // so we use the case source as an indication of the virtual (or real) config file
+                    path = Path.Combine(Path.GetDirectoryName(Case.SourceInfo.Source), path);
                 }
 
                 path = Path.GetFullPath(path);
@@ -144,14 +145,14 @@ namespace Egret.Cli.Processing
                 FileInfo file = new FileInfo(path);
                 if (file.Exists)
                 {
-                    return file;
+                    return (file, Path.GetRelativePath(Path.GetDirectoryName(Suite.SourceInfo.Source), file.FullName));
                 }
 
                 throw new FileNotFoundException($"File not found: {path}", file.FullName);
             }
         }
 
-        private async Task<FileInfo> FetchRemoteHttpFileAsync(Uri uri)
+        private async Task<(FileInfo, string)> FetchRemoteHttpFileAsync(Uri uri)
         {
             var downloadDest = tempFactory.GetTempFile();
             logger.LogTrace("Downloading {uri} to {tempFile}", uri, downloadDest);
@@ -170,7 +171,7 @@ namespace Egret.Cli.Processing
             var reader = PipeReader.Create(response.Content.ReadAsStream());
             await reader.CopyToAsync(writer);
 
-            return downloadDest;
+            return (downloadDest, null);
         }
 
         private async ValueTask<ToolResult> RunToolAsync(FileInfo file)
@@ -196,17 +197,17 @@ namespace Egret.Cli.Processing
                 switch (file.Extension.ToLower())
                 {
                     case ".json":
-                        using (var fileStream = file.OpenText())
-                        using (var reader = new JsonTextReader(fileStream))
+                        using (var stream = File.OpenRead(file.FullName))
+                        using (var document = await JsonDocument.ParseAsync(stream))
                         {
-                            var root = await JToken.ReadFromAsync(reader);
-                            if (root is JArray array)
+                            var sourceInfo = new SourceInfo(file.FullName);
+                            if (document.RootElement.ValueKind == JsonValueKind.Array)
                             {
-                                foreach (var item in array)
+                                foreach (var item in document.RootElement.EnumerateArray())
                                 {
-                                    if (item is JObject jObject)
+                                    if (item.ValueKind == JsonValueKind.Object)
                                     {
-                                        yield return new JsonResult(jObject);
+                                        yield return new JsonResult(item, sourceInfo);
                                     }
                                 }
                             }
@@ -224,18 +225,28 @@ namespace Egret.Cli.Processing
             // TODO: ADD WARNING WHEN NO FILES FOUND
         }
 
-        private List<ExpectationResult> AssessResults(IExpectationTest[] expectations, IReadOnlyList<NormalizedResult> actual)
+        private List<ExpectationResult> AssessResults(IExpectation[] expectations, IReadOnlyList<NormalizedResult> actual)
         {
             var results = new List<ExpectationResult>(expectations.Length);
-
+            logger.LogTrace("Assesing {count} expectations", expectations.Length);
             foreach (var expectation in expectations)
             {
-                results.AddRange(expectation.Test(actual));
+                results.AddRange(expectation.Test(actual, Suite));
             }
+
+            // okay now we need to determine if there are any extra events specified!
+            // on the asssumption that data is exhaustively labelled
+            // must be run after other-event level expectations
+            // TODO: auto generate this assertion in config deserialization
+            var noExtraResults = new NoExtraResultsExpectation();
+            results.AddRange(noExtraResults.Test(actual, Suite));
 
             return results;
         }
 
-
+        public void Dispose()
+        {
+            this.http.Dispose();
+        }
     }
 }

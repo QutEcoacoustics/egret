@@ -18,7 +18,7 @@ namespace Egret.Cli.Commands
 
             help.Write(context.ParseResult.CommandResult.Command);
 
-            return 0;
+            return ExitCodes.Success;
         }
     }
 }

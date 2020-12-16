@@ -11,6 +11,13 @@ namespace Egret.Cli.Models
     /// <summary>
     public struct TimeRange : IYamlConvertible
     {
+        public TimeRange(Interval startSeconds, Interval endSeconds) : this()
+        {
+            StartSeconds = startSeconds;
+            EndSeconds = endSeconds;
+        }
+
+
         public Interval StartSeconds { get; private set; }
 
         public Interval EndSeconds { get; private set; }

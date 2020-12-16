@@ -26,32 +26,47 @@ namespace Egret.Cli.Extensions
         /// https://github.com/dotnet/runtime/issues/1946
         /// /// </remarks>
         /// <returns></returns>
-        public static async IAsyncEnumerable<U> ForEachAsync<T, U>(
+        public static async Task<IList<U>> ForEachAsync<T, U>(
             this IEnumerable<T> source,
+            Action<int, U> completed = null,
             int? degreesOfParallelization = default,
-            [EnumeratorCancellation]
             CancellationToken token = default)
         where T : IAsyncInvokeable<U>
         {
             int index = 0;
             var max = degreesOfParallelization ?? Environment.ProcessorCount;
-            var throttler = new SemaphoreSlim(max, max);
+            var throttler = new SemaphoreSlim(max);
 
-
+            var jobs = new ConcurrentBag<Task<U>>();
             foreach (var task in source)
             {
-                await throttler.WaitAsync(token);
-                try
-                {
-                    yield return await task.InvokeAsync(
-                        Interlocked.Increment(ref index),
-                        token);
-                }
-                finally
-                {
-                    throttler.Release();
-                }
+                int thisIndex = Interlocked.Increment(ref index);
+
+                var jobTask = Task
+                    .Run(
+                        async () =>
+                        {
+                            try
+                            {
+                                await throttler.WaitAsync(token);
+                                var result = await task.InvokeAsync(thisIndex, token);
+                                completed?.Invoke(thisIndex, result);
+                                return result;
+                            }
+                            finally
+                            {
+                                throttler.Release();
+                            }
+                        },
+                        token
+                    );
+                jobs.Add(jobTask);
+
             }
+
+            var result = await Task.WhenAll(jobs);
+
+            return result;
         }
     }
 }

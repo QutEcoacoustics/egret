@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
+using Egret.Cli.Models.Results;
+
 
 namespace Egret.Cli.Formatters
 {
@@ -52,11 +54,11 @@ namespace Egret.Cli.Formatters
             }
         }
 
-        public async ValueTask WriteResultsFooter(int count, int successes, int failures)
+        public async ValueTask WriteResultsFooter(FinalResults finalResults)
         {
             foreach (var formatter in formatters)
             {
-                await formatter.WriteResultsFooter(count, successes, failures);
+                await formatter.WriteResultsFooter(finalResults);
             }
         }
 

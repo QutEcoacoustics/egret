@@ -2,8 +2,10 @@
 using Egret.Cli.Extensions;
 using Egret.Cli.Hosting;
 using Egret.Cli.Models;
+using LanguageExt;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
@@ -13,6 +15,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
 using static Egret.Cli.Processing.CaseExecutor;
+using Egret.Cli.Models.Results;
+using Microsoft.Extensions.FileSystemGlobbing;
+using System.IO;
 
 namespace Egret.Cli.Processing
 {
@@ -31,9 +36,7 @@ namespace Egret.Cli.Processing
             this.console = console;
         }
 
-
-
-        public async Task<List<TestCaseResult>> RunSuiteAsync(Config config)
+        public async Task<List<TestCaseResult>> RunAllSuitesAsync(Config config, IProgress<double> progressReporter, int maxParallelism)
         {
             logger.LogTrace("Generating tasks");
             var cases = GenerateTasks(config).ToArray();
@@ -43,20 +46,21 @@ namespace Egret.Cli.Processing
             int total = cases.Length;
             int progress = 0;
 
-            var results = new List<TestCaseResult>(cases.Length);
-            await foreach (var result in cases.ForEachAsync<CaseExecutor, TestCaseResult>())
-            {
-                var percentage = Interlocked.Increment(ref progress) / (double)total;
-                logger.LogDebug("Progress: {progress:P}", percentage);
-
-
-
-                results.Add(result);
-            }
+            var results = await cases
+                    .ForEachAsync<CaseExecutor, TestCaseResult>(
+                        completed: UpdateProgress,
+                        degreesOfParallelization: maxParallelism);
 
             logger.LogTrace("Results collected: {count}", progress);
 
-            return results;
+            return results.ToList();
+
+            void UpdateProgress(int index, TestCaseResult result)
+            {
+                var percentage = Interlocked.Increment(ref progress) / (double)total;
+                progressReporter.Report(percentage);
+                logger.LogDebug("Progress: {progress:P}", percentage);
+            }
         }
 
         public IEnumerable<CaseExecutor> GenerateTasks(Config config)
@@ -64,6 +68,7 @@ namespace Egret.Cli.Processing
             ushort suiteIndex = 0;
             foreach (var (suiteName, suite) in config.TestSuites)
             {
+                console.WriteRichLine($"Generating cases for {suiteName}...");
 
                 ushort toolIndex = 0;
 
@@ -71,20 +76,10 @@ namespace Egret.Cli.Processing
                 {
                     ushort caseIndex = 0;
 
-
-                    foreach (var @case in suite.Tests)
+                    foreach (var @case in suite.GetAllTests())
                     {
                         yield return factory.Create(@case, tool, suite, new CaseTracker(caseIndex, toolIndex, suiteIndex));
                         caseIndex++;
-                    }
-
-                    foreach (var (name, caseSet) in suite.SharedCases)
-                    {
-                        foreach (var @case in caseSet)
-                        {
-                            yield return factory.Create(@case, tool, suite, new CaseTracker(caseIndex, toolIndex, suiteIndex));
-                            caseIndex++;
-                        }
                     }
 
                     toolIndex++;
@@ -93,5 +88,8 @@ namespace Egret.Cli.Processing
                 suiteIndex++;
             }
         }
+
+
+
     }
 }

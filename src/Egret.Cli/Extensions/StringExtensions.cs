@@ -1,7 +1,7 @@
-using Microsoft.Extensions.Primitives;
-using MoreLinq;
+using LanguageExt;
 using System.Collections.Generic;
 using System.Text;
+using static LanguageExt.Prelude;
 
 namespace System
 {
@@ -11,6 +11,12 @@ namespace System
         {
             return string.Join(", ", items);
         }
+
+        public static string JoinIntoSetNotation(this IEnumerable<string> items)
+        {
+            return "{" + string.Join(", ", items) + "}";
+        }
+
 
         public static string Join(this IEnumerable<string> items, string separator)
         {
@@ -37,6 +43,43 @@ namespace System
             builder.Remove(builder.Length - 1, 1);
 
             return builder.ToString();
+        }
+
+        public static Option<(string Firstmatch, string SecondMatch)> MatchThroughAliases(
+            this IEnumerable<string> aliases,
+            string first,
+            string second,
+            StringComparison comparison
+            )
+        {
+            if (first.Equals(second, comparison))
+            {
+                return (first, second);
+            }
+
+            // otherwise look for matches through alias array
+            Option<string> firstMatch = None;
+            Option<string> secondMatch = None;
+            foreach (var alias in aliases)
+            {
+                if (firstMatch.IsNone && first.Equals(alias, comparison))
+                {
+                    firstMatch = alias;
+                }
+
+                if (secondMatch.IsNone && second.Equals(alias, comparison))
+                {
+                    secondMatch = alias;
+                }
+
+                if (firstMatch.IsSome && secondMatch.IsSome)
+                {
+                    // at some point we've accrued two matches, success!
+                    return from f in firstMatch from s in secondMatch select (f, s);
+                }
+            }
+
+            return None;
         }
     }
 }

@@ -22,8 +22,8 @@ namespace Egret.Cli.Serialization
                 .WithEventEmitter(next => new FlowEverythingEmitter(next))
                 .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitDefaults)
                 .WithTypeConverter(new ShortDoubleConverter())
-                .WithTypeConverter(new IntervalTypeConverter(settings.Value.DefaultThreshold))
-                .WithAttributeOverride<IExpectationTest>(x => x.Name, new YamlIgnoreAttribute())
+                .WithTypeConverter(new IntervalTypeConverter(settings.Value.DefaultThreshold, simplify: true, "0.##"))
+                .WithAttributeOverride<IExpectation>(x => x.Name, new YamlIgnoreAttribute())
                 .Build();
 
         }
@@ -66,7 +66,7 @@ namespace Egret.Cli.Serialization
             {
                 emitter.Emit(
                     new Scalar(
-                    ((double)value).ToString("0.00"))
+                    ((double)value).ToString("0.##"))
                 );
             }
         }

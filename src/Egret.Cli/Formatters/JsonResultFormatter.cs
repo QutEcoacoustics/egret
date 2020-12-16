@@ -3,11 +3,11 @@ using Egret.Cli.Processing;
 using System.IO;
 using System.Threading.Tasks;
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using System;
 using System.Diagnostics;
 using Egret.Cli.Commands;
 using Egret.Cli.Extensions;
+using Egret.Cli.Serialization.Json;
+using Egret.Cli.Models.Results;
 
 
 namespace Egret.Cli.Formatters
@@ -32,8 +32,9 @@ namespace Egret.Cli.Formatters
             serializerOptions = new JsonSerializerOptions()
             {
                 Converters = {
-                    new TimeSpanConverter()
-                }
+                    new SecondsTimeSpanConverter()
+                },
+                NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals,
             };
             writer = new Utf8JsonWriter(output.Open(FileMode.Create, FileAccess.Write, FileShare.Read), jsonWriterOptions);
         }
@@ -51,11 +52,11 @@ namespace Egret.Cli.Formatters
             await writer.FlushAsync();
         }
 
-        public async ValueTask WriteResultsFooter(int count, int successes, int failures)
+        public async ValueTask WriteResultsFooter(FinalResults finalResults)
         {
             writer.WriteEndArray();
             writer.WritePropertyName(SummaryKey);
-            JsonSerializer.Serialize(writer, new { Count = count, Successes = successes, Failures = failures }, options: serializerOptions);
+            JsonSerializer.Serialize(writer, finalResults, options: serializerOptions);
             writer.WriteEndObject();
 
             await writer.FlushAsync();
@@ -68,19 +69,6 @@ namespace Egret.Cli.Formatters
             writer.WriteStartArray();
 
             await writer.FlushAsync();
-        }
-    }
-
-    public class TimeSpanConverter : JsonConverter<TimeSpan>
-    {
-        public override TimeSpan Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
-            return TimeSpan.FromSeconds(reader.GetDouble());
-        }
-
-        public override void Write(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options)
-        {
-            writer.WriteNumberValue(value.TotalSeconds);
         }
     }
 }

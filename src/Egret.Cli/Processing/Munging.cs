@@ -18,7 +18,15 @@ namespace Egret.Cli.Processing
             "label",
             "tag",
             "species",
-            "name"
+            "name",
+            "species name"
+        };
+
+        public static readonly IEnumerable<string> LabelsNames = new string[]
+        {
+            "labels",
+            "tags",
+            "names"
         };
 
         public static readonly IEnumerable<string> StartNames = new string[]

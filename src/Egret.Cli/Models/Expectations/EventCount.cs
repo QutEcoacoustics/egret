@@ -1,6 +1,7 @@
-using Egret.Cli.Processing;
+
 using System;
 using System.Collections.Generic;
+using Egret.Cli.Models.Results;
 
 namespace Egret.Cli.Models
 {
@@ -11,6 +12,7 @@ namespace Egret.Cli.Models
 
         public Interval Count { get; init; }
         public override bool Match { get; init; } = true;
+        public override bool IsPositiveAssertion { get; } = true;
 
         public override string Name
         {
@@ -19,9 +21,9 @@ namespace Egret.Cli.Models
         }
 
 
-        public override IEnumerable<ExpectationResult> Test(IReadOnlyList<NormalizedResult> actualEvents)
+        public override IEnumerable<ExpectationResult> Test(IReadOnlyList<NormalizedResult> actualEvents, Suite suite)
         {
-            var success = ((IExpectationTest)this).Matches(Count.Contains(actualEvents.Count));
+            var success = ((IExpectation)this).Matches(Count.Contains(actualEvents.Count));
 
             Assertion assertion = success switch
             {

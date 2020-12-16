@@ -8,11 +8,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using static LanguageExt.Prelude;
+using Egret.Cli.Models.Results;
 
 namespace Egret.Cli.Models
 {
     public class BoundedExpectation : Expectation
     {
+        public BoundedExpectation(object context) : base(context)
+        {
+        }
+
         public Bounds Bounds { get; init; }
 
 

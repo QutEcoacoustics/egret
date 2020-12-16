@@ -17,7 +17,7 @@ namespace Egret.Cli.Models
 
         public Dictionary<string, Suite> TestSuites { get; init; }
 
-        public Dictionary<string, TestCase[]> CommonCases { get; init; }
+        public Dictionary<string, TestCase[]> CommonTests { get; init; }
 
         /// <summary>
         /// Stores the FileInfo (and path) to the file from which this config was read.
@@ -27,6 +27,6 @@ namespace Egret.Cli.Models
         /// This is used to resolve relative paths to files from inside the config files.
         /// </remarks>
         [YamlIgnore]
-        public string Location { get; internal set; }
+        public FileInfo Location { get; internal set; }
     }
 }

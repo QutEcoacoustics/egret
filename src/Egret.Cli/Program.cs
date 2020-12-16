@@ -49,6 +49,7 @@ namespace Egret.Cli
                     new Option<bool>("--json", description: "Output results to a json file").WithAlias("-j"),
                     new Option<bool>("--console", description: "Output results in the console").WithAlias("-c"),
                     new Option<bool>("--html", description: "Output results to a HTML file").WithAlias("-h"),
+                    new Option<bool>("--sequential", description: "Disable parallel execution").WithAlias("-s"),
                 },
                 new Command("watch", "Runs egret tests every time a change is found")
                 {

@@ -44,11 +44,15 @@ namespace Egret.Cli.Serialization
 
     public class IntervalTypeConverter : IYamlTypeConverter
     {
+        private readonly bool simplify;
+        private readonly string endpointFormat;
+
         public double DefaultThreshold { get; }
-        public IntervalTypeConverter(double defaultThreshold)
+        public IntervalTypeConverter(double defaultThreshold, bool simplify = false, string endpointFormat = null)
         {
             this.DefaultThreshold = defaultThreshold;
-
+            this.simplify = simplify;
+            this.endpointFormat = endpointFormat;
         }
 
         public bool Accepts(Type type)
@@ -65,7 +69,7 @@ namespace Egret.Cli.Serialization
 
         public void WriteYaml(IEmitter emitter, object value, Type type)
         {
-            emitter.Emit(new Scalar(value.ToString()));
+            emitter.Emit(new Scalar(((Interval)value).ToString(simplify: simplify, endpointFormat)));
         }
     }
 }

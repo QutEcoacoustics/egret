@@ -27,6 +27,8 @@ using System.Net.Http;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using Egret.Cli.Formatters;
+using Egret.Cli.Serialization.Avianz;
+using Egret.Cli.Serialization.Json;
 
 namespace Egret.Cli.Hosting
 {
@@ -60,19 +62,32 @@ namespace Egret.Cli.Hosting
             // });
             services.AddSingleton<EgretConsole>();
             services.AddSingleton<HttpClient>();
-            services.AddSingleton<Deserializer>();
+            services.AddSingleton<ConfigDeserializer>();
+            services.AddSingleton<DefaultJsonSerializer>();
             services.AddSingleton<LiterateSerializer>();
+            services.AddSingleton<AvianzDeserializer>();
 
             services.AddTransient<TempFactory>();
             services.AddTransient<Executor>();
             services.AddTransient<CaseExecutor>();
             services.AddSingleton<CaseExecutorFactory>();
-            services.AddSingleton<ToolRunner>();
+
+            // tool runner uses temp factory, which we want to be uniquely created for each use
+            // thus we can't allow tool runner to be a singleton
+            services.AddTransient<ToolRunner>();
 
             services.AddSingleton<ConsoleResultFormatter>();
             services.AddSingleton<JsonResultFormatter>();
             services.AddSingleton<HtmlResultFormatter>();
             services.AddSingleton<MetaFormatter>();
+
+            services.AddSingleton<SharedImporter>();
+            services.AddSingleton<AvianzImporter>();
+            services.AddSingleton((provider) => new ITestCaseImporter[] {
+                provider.GetRequiredService<SharedImporter>(),
+                provider.GetRequiredService<AvianzImporter>(),
+            });
+            services.AddSingleton<TestCaseImporter>();
         }
 
         private static LogEventLevel GetLogLevel(IServiceProvider provider)
@@ -90,11 +105,15 @@ namespace Egret.Cli.Hosting
             loggerConfiguration
                 .Enrich.FromLogContext()
                 .Enrich.WithThreadId()
+                .Destructure.ToMaximumDepth(20)
+                .Destructure.With(new EgretSerilogDestructuringPolicy())
                 .MinimumLevel.Is(GetLogLevel(services))
+
                 .WriteTo.Console(
                     theme: SerilogTheme.Custom,
                     outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3} <{ThreadId,2}>]{Scope} {Message}{NewLine}{Exception}"
-                ).Filter.ByExcluding(logEvent =>
+                )
+                .Filter.ByExcluding(logEvent =>
                     logEvent.Properties.TryGetValue("SourceContext", out var source)
                     && (source as ScalarValue).Value.Equals(FilterEgretConsoleName)
                 );

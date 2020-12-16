@@ -16,11 +16,11 @@ namespace Egret.Cli.Serialization
             typeLookup = new Dictionary<string, Type>() {
                 { namingConvention.Apply(nameof(BoundedExpectation.Bounds)), typeof(BoundedExpectation) },
                 { namingConvention.Apply(nameof(CentroidExpectation.Centroid)), typeof(CentroidExpectation) },
-                { namingConvention.Apply(nameof(TimeExpectation.Time)), typeof(TimeExpectation) },
+                { namingConvention.Apply(nameof(TemporalExpectation.Time)), typeof(TemporalExpectation) },
             };
         }
 
-        public Type BaseType => typeof(IExpectationTest);
+        public Type BaseType => typeof(IExpectation);
 
         public bool TryResolve(ParsingEventBuffer buffer, out Type suggestedType)
         {

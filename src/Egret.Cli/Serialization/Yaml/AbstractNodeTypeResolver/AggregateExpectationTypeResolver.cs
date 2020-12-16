@@ -22,7 +22,7 @@ namespace Egret.Cli.Serialization
                  { namingConvention.Apply(nameof(EventCount)), typeof(EventCount) },
             };
         }
-        public Type BaseType => typeof(IExpectationTest);
+        public Type BaseType => typeof(IExpectation);
 
         public bool TryResolve(ParsingEventBuffer buffer, out Type suggestedType)
         {

@@ -1,6 +1,7 @@
 using Egret.Cli.Processing;
 using LanguageExt;
 using System.Collections.Generic;
+using Egret.Cli.Models.Results;
 
 namespace Egret.Cli.Models
 {

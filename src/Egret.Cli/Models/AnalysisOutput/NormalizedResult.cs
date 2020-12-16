@@ -1,9 +1,10 @@
 
 using Egret.Cli.Processing;
+using Egret.Cli.Serialization.Yaml;
 using LanguageExt;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
@@ -11,34 +12,30 @@ using static LanguageExt.Prelude;
 
 namespace Egret.Cli.Models
 {
-    public interface ITryGetValue
+
+
+
+    public abstract class NormalizedResult : ITryGetValue, ISourceInfo
     {
-        bool TryGetValue<T>(string key, out T value, StringComparison comparison = StringComparison.InvariantCulture);
-    }
 
-    public record KeyedValue<T>(string Key, T Value);
+        public bool IsMarked => MarkedBy is not null;
+        public IExpectation MarkedBy { get; private set; }
 
-    public record CompositeKeyedValue<T> : KeyedValue<T>
-    {
-        public const string CompositeKeyDelimiter = "+";
-
-        public CompositeKeyedValue(IEnumerable<string> keys, T Value)
-            : base(keys.Join(CompositeKeyDelimiter), Value)
+        public void Mark(IExpectation expectation)
         {
-            Keys = keys;
+            if (IsMarked)
+            {
+                throw new InvalidOperationException("Result reserved twice. This should not happen");
+            }
+            MarkedBy = expectation;
         }
 
-        public IEnumerable<string> Keys { get; init; }
-    }
-
-
-    public abstract class NormalizedResult : ITryGetValue
-    {
-
+        public abstract SourceInfo SourceInfo { get; set; }
 
         public abstract bool TryGetValue<T>(string key, out T value, StringComparison comparison = StringComparison.InvariantCulture);
 
         private Validation<string, KeyedValue<string>>? label;
+        // private Validation<string, KeyedValue<string[]>>? labels;
         private Validation<string, KeyedValue<double>>? start;
         private Validation<string, KeyedValue<double>>? centroidStart;
         private Validation<string, KeyedValue<double>>? end;
@@ -49,6 +46,7 @@ namespace Egret.Cli.Models
         private Validation<string, KeyedValue<double>>? duration;
 
         public Validation<string, KeyedValue<string>> Label => label ??= Munging.TryNames<string>(this, Munging.LabelNames);
+        // public Validation<string, KeyedValue<string[]>> Labels => labels ??= Munging.TryNames<string[]>(this, Munging.LabelsNames);
         public Validation<string, KeyedValue<double>> Start => start ??= Munging.TryNames<double>(this, Munging.StartNames);
         public Validation<string, KeyedValue<double>> End => end ??= Munging.TryNames<double>(this, Munging.EndNames);
         public Validation<string, KeyedValue<double>> Low => low ??= Munging.TryNames<double>(this, Munging.LowNames);
@@ -142,31 +140,20 @@ namespace Egret.Cli.Models
                 return coords;
             }
         }
-    }
 
-    public class JsonResult : NormalizedResult
-    {
-        private readonly JObject source;
-
-        public JsonResult(JObject source)
-        {
-            this.source = source;
-        }
-
-        public override bool TryGetValue<T>(string key, out T value, StringComparison comparison = StringComparison.InvariantCulture)
+        public override string ToString()
         {
 
-            var propExists = source.TryGetValue(key, comparison, out var valueElement);
-            if (propExists)
+            return $"{SourceInfo.ToString(true)}: Label={Format(Label)} Start={Format(Start)} End={Format(End)} Low={Format(Low)} High={Format(High)}";
+
+            static string Format<T>(Validation<string, KeyedValue<T>> validation)
             {
-                value = valueElement.ToObject<T>();
-                return true;
-            }
-            else
-            {
-                value = default;
-                return false;
+                return validation.Match(
+                    Succ: (s) => $"{{{s.Key}: {s.Value}}}",
+                    Fail: (errors) => "ERROR:" + errors.Join(";", "\"")
+                );
             }
         }
+
     }
 }
