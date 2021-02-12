@@ -1,11 +1,8 @@
 # Egret
-
+<img align="right" width="100" height="100" alt="Egret logo. Credit David Clode." src="docs/media/david-clode-u0A7OMSRddM-unsplash-small.png"/>
+ 
 > An **E**coacoustics **G**eneralized **R**ecognition and **E**vent **T**ester.
 
-<img align="right" width="100" height="100" src="docs/media/david-clode-u0A7OMSRddM-unsplash-small.png"/>
-  
-<span><small>Image credit: <a href="https://unsplash.com/photos/u0A7OMSRddM">David Clode</a></small></span>
-  
 ![egret demo image](docs/media/egret_output.png)
 
 Egret is a general purpose audio recognition benchmarking tool. It's main job
@@ -425,3 +422,7 @@ produce long-lived, real-world products.
 ## LICENSE
 
 Apache v2.
+
+---
+
+Egret logo image credit: [David Clode](https://unsplash.com/photos/u0A7OMSRddM)
