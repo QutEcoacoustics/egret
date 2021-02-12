@@ -1,5 +1,4 @@
-# Egret
-<img align="right" width="100" height="100" alt="Egret logo. Credit David Clode." src="docs/media/david-clode-u0A7OMSRddM-unsplash-small.png"/>
+# Egret <img align="right" width="100" height="100" alt="Egret logo. Credit David Clode." src="docs/media/david-clode-u0A7OMSRddM-unsplash-small.png"/>
  
 > An **E**coacoustics **G**eneralized **R**ecognition and **E**vent **T**ester.
 
