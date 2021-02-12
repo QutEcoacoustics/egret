@@ -1,7 +1,11 @@
-
 # Egret
 
- > An **E**coacoustics **G**eneralized **R**ecognition and **E**vent **T**ester.
+> An **E**coacoustics **G**eneralized **R**ecognition and **E**vent **T**ester.
+
+<figure align="right">
+  <img align="center" width="100" height="100" src="docs/media/david-clode-u0A7OMSRddM-unsplash-small.png"/>
+  <figcaption><small>Image credit: <a href="https://unsplash.com/photos/u0A7OMSRddM">David Clode</a></small></figcaption>
+</figure>
 
 ![egret demo image](docs/media/egret_output.png)
 

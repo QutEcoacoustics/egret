@@ -30,7 +30,24 @@
 			"msbuild",
 			"nuget",
 			"omnisharp"
-		]
+		],
+		"workbench.colorCustomizations": {
+			"activityBar.activeBackground": "#fefae0",
+			"activityBar.activeBorder": "#06b9a1",
+			"activityBar.background": "#fefae0",
+			"activityBar.foreground": "#15202b",
+			"activityBar.inactiveForeground": "#15202b99",
+			"activityBarBadge.background": "#06b9a1",
+			"activityBarBadge.foreground": "#15202b",
+			"statusBar.background": "#fcf3af",
+			"statusBar.foreground": "#15202b",
+			"statusBarItem.hoverBackground": "#faec7e",
+			"titleBar.activeBackground": "#fcf3af",
+			"titleBar.activeForeground": "#15202b",
+			"titleBar.inactiveBackground": "#fcf3af99",
+			"titleBar.inactiveForeground": "#15202b99"
+		},
+		"peacock.color": "#FCF3AF",
 	},
 	"extensions": {
 		"recommendations": [
@@ -38,6 +55,6 @@
 			"editorconfig.editorconfig",
 			"jmrog.vscode-nuget-package-manager",
 			"tintoy.msbuild-project-tools"
-		]
+		],
 	}
 }
