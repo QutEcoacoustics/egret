@@ -1,11 +1,15 @@
 using Egret.Cli.Hosting;
 using Egret.Cli.Models;
+using Egret.Cli.Processing;
 using LanguageExt;
+using LanguageExt.Common;
 using Microsoft.Extensions.FileSystemGlobbing;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 using static LanguageExt.Prelude;
 
 namespace Egret.Cli.Serialization
@@ -16,32 +20,31 @@ namespace Egret.Cli.Serialization
     public class SharedImporter : ITestCaseImporter
     {
         private readonly ILogger<SharedImporter> logger;
-        private readonly EgretConsole console;
+        private readonly string SharedTestsKey;
 
-        public SharedImporter(ILogger<SharedImporter> logger, EgretConsole console)
+        public SharedImporter(ILogger<SharedImporter> logger, INamingConvention configNaming)
         {
             this.logger = logger;
-            this.console = console;
+            SharedTestsKey = configNaming.Apply(nameof(Config.CommonTests));
         }
 
-        public Option<IEnumerable<string>> CanProcess(Matcher matcher, Config config)
+        public Validation<Error, Option<IEnumerable<string>>> CanProcess(string matcher, Config config)
         {
-            if (config?.CommonTests?.Count is null or 0)
+            if (matcher == SharedTestsKey)
             {
-                return None;
+                return Some(config.CommonTests.Keys.AsEnumerable());
             }
 
-            var result = matcher.Match(config.CommonTests.Keys);
-
-            return result.HasMatches ? Some(result.Files.Select(fpm => fpm.Path)) : None;
+            return Option<IEnumerable<string>>.None;
         }
 
-        public IAsyncEnumerable<TestCase> Load(IEnumerable<string> resolvedSpecifications, TestCaseInclude include, Config config, TestCaseImporter recursiveImporter)
+        public IAsyncEnumerable<TestCase> Load(IEnumerable<string> resolvedSpecifications, ImporterContext context)
         {
-            if (include.SpectralTolerance is not null || include.TemporalTolerance is not null)
+
+            if (context.Include.SpectralTolerance is not null || context.Include.TemporalTolerance is not null)
             {
                 logger.LogWarning(
-                    $"{nameof(TestCaseInclude.SpectralTolerance)} and {nameof(TestCaseInclude.TemporalTolerance)} are ignored when importing test from the `common_tests` section. You can put tolerances on the tests directly.");
+                    $"{nameof(TestCaseInclude.SpectralTolerance)} and {nameof(TestCaseInclude.TemporalTolerance)} are ignored when importing tests from the `common_tests` section. You can put tolerances on the tests directly.");
             }
 
             // note to future me: there's no point outputting console context here
@@ -51,9 +54,16 @@ namespace Egret.Cli.Serialization
 
             IEnumerable<TestCase> Sync()
             {
+                var matcher = context.Include.FilterMatcher;
                 foreach (var key in resolvedSpecifications)
                 {
-                    var result = config.CommonTests[key];
+                    if (!matcher.Match(key).HasMatches)
+                    {
+                        logger.LogDebug("Filtered out common tests for {key}", key);
+                        continue;
+                    }
+
+                    var result = context.Config.CommonTests[key];
                     foreach (var test in result)
                     {
                         yield return test;

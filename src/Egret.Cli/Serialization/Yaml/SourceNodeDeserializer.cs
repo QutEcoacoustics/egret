@@ -8,12 +8,12 @@ namespace Egret.Cli.Serialization.Yaml
     public class SourceInfoNodeDeserializer : INodeDeserializer
     {
         private readonly INodeDeserializer original;
-        public SourceInfoNodeDeserializer(INodeDeserializer original)
+        public string CurrentSource { get; }
+        public SourceInfoNodeDeserializer(INodeDeserializer original, string currentSource)
         {
+            CurrentSource = currentSource;
             this.original = original;
         }
-
-        public string CurrentSource { get; internal set; }
 
         public bool Deserialize(IParser reader, Type expectedType, Func<IParser, Type, object> nestedObjectDeserializer, out object value)
         {
@@ -23,7 +23,7 @@ namespace Egret.Cli.Serialization.Yaml
             if (originalResult && value is ISourceInfo info)
             {
                 var end = reader.Current;
-                info.SourceInfo = new SourceInfo(CurrentSource, start.Start.Line, start.Start.Index, end.Start.Line, end.Start.Index);
+                info.SourceInfo = new SourceInfo(CurrentSource, start.Start.Line, start.Start.Column, end.Start.Line, end.Start.Column);
             }
 
             return originalResult;

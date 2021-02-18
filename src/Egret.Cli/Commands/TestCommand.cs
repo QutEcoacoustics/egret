@@ -19,6 +19,7 @@ using System.CommandLine.Rendering.Views;
 using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
+using System.IO.Abstractions;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -111,7 +112,7 @@ namespace Egret.Cli.Commands
 
         private async ValueTask<LanguageExt.Option<Config>> LoadConfig()
         {
-            var (config, errors) = await serializer.Deserialize(options.Configuration);
+            var (config, errors) = await serializer.Deserialize((FileInfoBase)options.Configuration);
 
             logger.LogTrace("config values: {@config}", config);
             if (errors.Any())

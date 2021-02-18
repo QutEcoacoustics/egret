@@ -27,46 +27,55 @@ namespace Egret.Cli.Serialization
         /// </summary>
         /// <param name="config">The rest of the config that was loaded.</param>
         /// <returns>Loaded test cases</returns>
-        public async ValueTask<Seq<Error>> LoadImportedTestCases(TestCaseSet testCaseSet, Config config)
+        public async ValueTask<Seq<Error>> LoadImportedTestCases(Suite suite, Config config, ConfigDeserializer deserializer)
         {
-            if (testCaseSet.IncludeTests.Length == 0)
+            if (suite.IncludeTests.Count == 0)
             {
                 return Empty;
             }
 
-            for (int i = 0; i < testCaseSet.IncludeTests.Length; i++)
+            Lst<TestCaseInclude> modifiedIncludes = Empty;
+            for (int i = 0; i < suite.IncludeTests.Count; i++)
             {
-                TestCaseInclude include = testCaseSet.IncludeTests[i];
+                TestCaseInclude include = suite.IncludeTests[i];
                 var providerResult = FindProviderOrThrow(include, config);
 
-                if (providerResult.Case is Seq<string> failure)
+                if (providerResult.IsFail)
                 {
-                    return failure.Map(Error.New);
+                    return providerResult.FailToSeq();
                 }
+
                 var (provider, refinedFroms) = ((ITestCaseImporter, IEnumerable<string>))providerResult;
 
                 // warning: recursive! each import could potentially have more imports!
-                var tests = await provider.Load(refinedFroms, include, config, recursiveImporter: this).ToArrayAsync();
+                var tests = await provider.Load(refinedFroms, new ImporterContext(include, config, deserializer)).ToArrayAsync();
 
                 logger.LogTrace("Provider {provider} did match {from}, returned {count} results", provider.GetType().Name, include.From, tests.Length);
-                testCaseSet.IncludeTests[i] = include with { Tests = tests };
+                modifiedIncludes += include with { Tests = tests };
             }
+
+            suite.IncludeTests = modifiedIncludes.ToArr();
 
             return Empty;
         }
 
-        private Validation<string, (ITestCaseImporter, IEnumerable<string>)> FindProviderOrThrow(TestCaseInclude include, Config config)
+        private Validation<Error, (ITestCaseImporter, IEnumerable<string>)> FindProviderOrThrow(TestCaseInclude include, Config config)
         {
             logger.LogTrace("Loading includes for {from}", include.From);
 
-            // convert from to glob
-            var matcher = MultiGlob.Parse(include.From);
+            Seq<Error> errors = Empty;
             foreach (var provider in Importers)
             {
                 // can the provider process this include?
-                var can = provider.CanProcess(matcher, config);
+                var testCan = provider.CanProcess(include.From, config);
 
-                if (can.Case is IEnumerable<string> refinedFroms)
+                if (testCan.IsFail)
+                {
+                    errors += testCan.FailToSeq();
+                    continue;
+                }
+
+                if (testCan.IfFail(None).Case is IEnumerable<string> refinedFroms)
                 {
                     return (provider, refinedFroms);
                 }
@@ -76,7 +85,7 @@ namespace Egret.Cli.Serialization
                 // try next provider
             }
 
-            return $"Cannot load includes: {include.From} was not found or we don't know how to load tests from this type of file";
+            return Error.New($"Cannot load includes: {include.From} was not found or we don't know how to load tests from this type of file").Cons(errors);
         }
     }
 }

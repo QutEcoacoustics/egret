@@ -1,6 +1,8 @@
 using Egret.Cli.Models;
 using Egret.Cli.Models.Avianz;
+using Egret.Cli.Processing;
 using LanguageExt;
+using LanguageExt.Common;
 using Microsoft.Extensions.FileSystemGlobbing;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -8,6 +10,7 @@ using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Abstractions;
 using System.Linq;
 using System.Threading.Tasks;
 using static LanguageExt.Prelude;
@@ -19,23 +22,32 @@ namespace Egret.Cli.Serialization.Avianz
         private readonly AvianzDeserializer avianzDeserializer;
         private readonly double defaultTolerance;
         private readonly ILogger<AvianzImporter> logger;
+        private readonly IFileSystem fileSystem;
 
-        public AvianzImporter(ILogger<AvianzImporter> logger, AvianzDeserializer avianzDeserializer, IOptions<AppSettings> settings)
+        public AvianzImporter(ILogger<AvianzImporter> logger, IFileSystem fileSystem, AvianzDeserializer avianzDeserializer, IOptions<AppSettings> settings)
         {
             this.logger = logger;
+            this.fileSystem = fileSystem;
             this.avianzDeserializer = avianzDeserializer;
             defaultTolerance = settings.Value.DefaultThreshold;
         }
 
-        public Option<IEnumerable<string>> CanProcess(Matcher matcher, Config config)
+        public Validation<Error, Option<IEnumerable<string>>> CanProcess(string matcher, Config config)
         {
-            var result = matcher.GetResultsInFullPath(config.Location.DirectoryName);
-            return result.Any() && result.All(p => Path.GetExtension(p) == ".data") ? Some(result) : None;
+            var (errors, results) = PathResolver
+                .ResolvePathOrGlob(fileSystem, matcher, config.Location.DirectoryName)
+                .Partition();
+
+            if (errors.Any())
+            {
+                return errors.ToSeq();
+            }
+            return results.Any() && results.All(p => Path.GetExtension(p) == ".data") ? Some(results) : None;
         }
 
-        public async IAsyncEnumerable<TestCase> Load(IEnumerable<string> resolvedSpecifications, TestCaseInclude include, Config config, TestCaseImporter recursiveImporter)
+        public async IAsyncEnumerable<TestCase> Load(IEnumerable<string> resolvedSpecifications, ImporterContext context)
         {
-            if (include.Filter is not null)
+            if (context.Include.Filter is not null)
             {
                 throw new Exception("The AviaNZ importer does not currently support include filters");
             }
@@ -52,7 +64,7 @@ namespace Egret.Cli.Serialization.Avianz
                 }
 
                 var dataFile = await avianzDeserializer.DeserializeLabelFile(path);
-                var expectations = dataFile.Annotations.Select((x, i) => MakeExpectationFromAnnotation(x, i, include));
+                var expectations = dataFile.Annotations.Select((x, i) => MakeExpectationFromAnnotation(x, i, context.Include));
 
                 logger.LogTrace("Data file converted to expectations: {@expectations}", expectations);
 

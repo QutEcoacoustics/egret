@@ -45,6 +45,11 @@ namespace System
             return builder.ToString();
         }
 
+        public static string NormalizeBlank(this string @string)
+        {
+            return string.IsNullOrWhiteSpace(@string) ? null : @string;
+        }
+
         public static Option<(string Firstmatch, string SecondMatch)> MatchThroughAliases(
             this IEnumerable<string> aliases,
             string first,

@@ -45,7 +45,7 @@ namespace Egret.Cli.Models
 
         public string Label { get; init; }
 
-        public string[] AnyLabel { get; init; }
+        public string[] AnyLabel { get; init; } = System.Array.Empty<string>();
 
         public Interval? Duration { get; init; }
         public Interval? Bandwidth { get; init; }

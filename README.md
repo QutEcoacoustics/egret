@@ -29,8 +29,7 @@ but it can be easily adapted to run _your_ own tool, or recognizer.
 ## Status
 
 Egret is a very early prototype - an alpha. Expect many incomplete features, bugs,
-and frequent 
-breaking changes in features and scope. No warranty, express or implied, is given.
+and frequent breaking changes in features and scope. No warranty, express or implied, is given.
 
 Where possible features that are not yet implemented are marked with a
 _Construction_ sign emoji (🚧).

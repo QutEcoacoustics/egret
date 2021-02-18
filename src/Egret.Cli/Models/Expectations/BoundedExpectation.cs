@@ -14,6 +14,10 @@ namespace Egret.Cli.Models
 {
     public class BoundedExpectation : Expectation
     {
+        public BoundedExpectation() : base(null)
+        {
+        }
+
         public BoundedExpectation(object context) : base(context)
         {
         }

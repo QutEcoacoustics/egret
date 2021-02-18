@@ -22,6 +22,7 @@
 			"Intrinsics",
 			"Parallelization",
 			"Partitioner",
+			"Serialisation",
 			"Serilog",
 			"Succ",
 			"Xunit",

@@ -10,6 +10,7 @@ namespace Egret.Cli.Serialization
     public class ExpectationTypeResolver : ITypeDiscriminator
     {
         private readonly Dictionary<string, Type> typeLookup;
+        private readonly KeyValuePair<string, Type> fallback;
 
         public ExpectationTypeResolver(INamingConvention namingConvention)
         {
@@ -18,6 +19,9 @@ namespace Egret.Cli.Serialization
                 { namingConvention.Apply(nameof(CentroidExpectation.Centroid)), typeof(CentroidExpectation) },
                 { namingConvention.Apply(nameof(TemporalExpectation.Time)), typeof(TemporalExpectation) },
             };
+
+            // Only match label only expectation as a last resort. We want more specific matchers to match first.
+            fallback = new KeyValuePair<string, Type>(namingConvention.Apply(nameof(LabelOnlyExpectation.Label)), typeof(LabelOnlyExpectation));
         }
 
         public Type BaseType => typeof(IExpectation);
@@ -30,6 +34,16 @@ namespace Egret.Cli.Serialization
                 out ParsingEvent _))
             {
                 suggestedType = typeLookup[key.Value];
+                return true;
+            }
+
+            buffer.Reset();
+            if (buffer.TryFindMappingEntry(
+                scalar => fallback.Key == scalar.Value,
+                out Scalar _,
+                out ParsingEvent _))
+            {
+                suggestedType = fallback.Value;
                 return true;
             }
 

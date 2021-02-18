@@ -29,6 +29,10 @@ using System.Collections.Immutable;
 using Egret.Cli.Formatters;
 using Egret.Cli.Serialization.Avianz;
 using Egret.Cli.Serialization.Json;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
+using Egret.Cli.Serialization.Egret;
+using System.IO.Abstractions;
 
 namespace Egret.Cli.Hosting
 {
@@ -62,6 +66,8 @@ namespace Egret.Cli.Hosting
             // });
             services.AddSingleton<EgretConsole>();
             services.AddSingleton<HttpClient>();
+            services.AddSingleton<IFileSystem>(_ => new FileSystem());
+            services.AddSingleton(_ => UnderscoredNamingConvention.Instance);
             services.AddSingleton<ConfigDeserializer>();
             services.AddSingleton<DefaultJsonSerializer>();
             services.AddSingleton<LiterateSerializer>();
@@ -83,9 +89,11 @@ namespace Egret.Cli.Hosting
 
             services.AddSingleton<SharedImporter>();
             services.AddSingleton<AvianzImporter>();
+            services.AddSingleton<EgretImporter>();
             services.AddSingleton((provider) => new ITestCaseImporter[] {
                 provider.GetRequiredService<SharedImporter>(),
                 provider.GetRequiredService<AvianzImporter>(),
+                provider.GetRequiredService<EgretImporter>(),
             });
             services.AddSingleton<TestCaseImporter>();
         }

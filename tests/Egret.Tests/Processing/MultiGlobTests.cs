@@ -1,11 +1,15 @@
 using Egret.Cli.Processing;
+using Egret.Tests.Support;
+using FluentAssertions;
 using Microsoft.Extensions.FileSystemGlobbing;
+using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Egret.Tests.Processing
 {
-    public class MultiGlobTests
+    public class MultiGlobTests : TestBase
     {
         private static readonly string[] Source = new[] {
             "negatives_anthropogenic",
@@ -25,6 +29,10 @@ namespace Egret.Tests.Processing
             "negatives_squirrel_glider",
             "negatives_sugar_glider",
         };
+
+        public MultiGlobTests(ITestOutputHelper output) : base(output)
+        {
+        }
 
         [Theory]
         [InlineData("*", 16)]
@@ -71,6 +79,46 @@ namespace Egret.Tests.Processing
             Assert.Equal(expectedCount, actual.Files.Count());
             var delta = Source.Except(missingItems);
             Assert.Equal(delta, actual.Files.Select(x => x.Path));
+        }
+
+        [Theory]
+        [InlineData("!hello", "!anythingelse")]
+        [InlineData("[!]hello", "!hello")]
+        [InlineData("hel!lo", "hel!lo")]
+        [InlineData("hel[!]lo", "hel!lo")]
+        [InlineData("[!]hello|!donkey", "!hello")]
+        public void MultiGlobCanStillMatchBangs(string pattern, string example)
+        {
+            var glob = MultiGlob.Parse(pattern); ;
+
+            var actual = glob.Match(example);
+
+            actual.HasMatches.Should().BeTrue();
+        }
+
+        [Fact]
+        public void MultiGlobProvidesOriginalPattern()
+        {
+            var glob = MultiGlob.Parse("[!]hello|!donkey");
+
+            glob.OriginalPattern.Should().Be("[!]hello|!donkey");
+        }
+
+        [Fact]
+        public void MultiGlobHasAnIFileSystemExtension()
+        {
+            var glob = MultiGlob.Parse("**|!donkey");
+            TestFiles.AddFile("hello.txt", null);
+            TestFiles.AddFile("donkey", null);
+            TestFiles.AddFile("abc/hello", null);
+            TestFiles.AddFile("abc/donkey", null);
+            var results = glob.GetResultsInFullPath(TestFiles, Helpers.DefaultTestPath);
+
+            results.Should().BeEquivalentTo(new string[] {
+                TestFiles.Path.GetFullPath("hello.txt"),
+                TestFiles.Path.GetFullPath("abc/hello"),
+                TestFiles.Path.GetFullPath("abc/donkey"),
+            });
         }
     }
 }

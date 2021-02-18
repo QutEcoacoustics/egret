@@ -7,6 +7,10 @@ namespace Egret.Cli.Models
 {
     public class TemporalExpectation : Expectation
     {
+        public TemporalExpectation() : base()
+        {
+        }
+
         public TemporalExpectation(object context) : base(context)
         {
         }

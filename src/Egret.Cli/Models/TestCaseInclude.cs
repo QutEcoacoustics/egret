@@ -1,7 +1,10 @@
+using Egret.Cli.Processing;
+using LanguageExt;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using YamlDotNet.Serialization;
+using static LanguageExt.Prelude;
 
 namespace Egret.Cli.Models
 {
@@ -10,26 +13,27 @@ namespace Egret.Cli.Models
         /// <summary>
         /// A globable string spec that is interpreted differently by different
         /// providers.
-        /// It usually a file spec relative to the current config file.
+        /// It usually a file path relative to the current config file.
         /// </summary>
-        /// <value></value>
+        /// <value>A multiglob string</value>
         public string From { get; init; }
 
         /// <summary>
         /// The filter to use on imported objects.
-        /// Implementation is provider specific.
+        /// Implementation is provider specific but will be understood as a multiglob
         /// </summary>
-        /// <value>A filter object containing either Include or Excludes</value>
-        public Filter Filter { get; init; }
+        /// <value>A multiglob string</value>
+        public string Filter { get; init; }
+
+        public MultiGlob FilterMatcher => MultiGlob.Parse(Filter.NormalizeBlank() ?? "*");
 
         public double? TemporalTolerance { get; init; }
+
         public double? SpectralTolerance { get; init; }
 
         [YamlIgnore]
-        public TestCase[] Tests { get; init; } = Array.Empty<TestCase>();
+        public Arr<TestCase> Tests { get; init; } = Empty;
 
 
     }
-
-    public record Filter(string Include, string Exclude);
 }

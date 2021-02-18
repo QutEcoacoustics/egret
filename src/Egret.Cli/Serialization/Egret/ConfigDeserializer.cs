@@ -3,7 +3,9 @@ using Egret.Cli.Processing;
 using Egret.Cli.Serialization.Avianz;
 using Egret.Cli.Serialization.Yaml;
 using LanguageExt;
+using LanguageExt.ClassInstances;
 using LanguageExt.Common;
+using LanguageExt.TypeClasses;
 using LanguageExt.UnsafeValueAccess;
 using Microsoft.Extensions.FileSystemGlobbing;
 using Microsoft.Extensions.Logging;
@@ -13,15 +15,17 @@ using Serilog;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
+using System.IO.Abstractions;
 using System.Linq;
 using System.Reflection.Metadata;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using YamlDotNet.Core.Events;
 using YamlDotNet.RepresentationModel;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 using YamlDotNet.Serialization.NodeDeserializers;
+
 using static LanguageExt.Prelude;
 
 namespace Egret.Cli.Serialization
@@ -30,62 +34,83 @@ namespace Egret.Cli.Serialization
     {
         private ILogger<ConfigDeserializer> Logger { get; }
 
-        private readonly INamingConvention NamingConvention;
-        private readonly TestCaseImporter importer;
-        private SourceInfoNodeDeserializer sourceInfoNodeDeserializer;
+        private readonly IFileSystem fileSystem;
 
-        public ConfigDeserializer(ILogger<ConfigDeserializer> logger, IOptions<AppSettings> settings, TestCaseImporter importer)
+        private readonly INamingConvention NamingConvention;
+
+        private readonly TestCaseImporter importer;
+
+        private readonly IOptions<AppSettings> settings;
+
+        public ConfigDeserializer(
+            ILogger<ConfigDeserializer> logger,
+            IOptions<AppSettings> settings,
+            TestCaseImporter importer,
+            INamingConvention namingConvention,
+            IFileSystem fileSystem)
         {
             Logger = logger;
-            NamingConvention = UnderscoredNamingConvention.Instance;
+            NamingConvention = namingConvention;
+            this.fileSystem = fileSystem;
             this.importer = importer;
+            this.settings = settings;
 
+        }
+        public IEnumerable<ITestCaseImporter> Importers { get; private set; }
+
+        public Task<(Config, Seq<Error>)> Deserialize(IFileInfo configFile)
+        {
+            using var reader = configFile.OpenText();
+            return Deserialize(reader, configFile.FullName);
+        }
+
+        public async Task<(Config Config, Seq<Error> Errors)> Deserialize(System.IO.TextReader reader, string configFilePath)
+        {
+            Logger.LogDebug("Loading config file: {file}", configFilePath);
+            var deserializer = BuildDeserializer(configFilePath);
+
+            var config = deserializer.Deserialize<Config>(reader);
+
+            Logger.LogDebug("Normalizing config file: {file}", configFilePath);
+            var errors = await Normalize(config, fileSystem.FileInfo.FromFileName(configFilePath));
+
+            // TODO: call validation?
+
+            Logger.LogDebug("Finished loading config file: {file}", configFilePath);
+            return (config, errors);
+        }
+
+        /// <summary>
+        /// We build a new instance of a deserializer for every operation so that
+        /// we can provide source context (a file path) to every read operation.
+        /// </summary>
+        private IDeserializer BuildDeserializer(string context)
+        {
             // these resolvers allow us to deserialize to an abstract class or interface
             var aggregateExpectationResolver = new AggregateExpectationTypeResolver(NamingConvention);
             var expectationResolver = new ExpectationTypeResolver(NamingConvention);
 
-
-            YamlDeserializer = new DeserializerBuilder()
+            return new DeserializerBuilder()
                 .WithNamingConvention(NamingConvention)
                 .WithTypeConverter(new IntervalTypeConverter(settings.Value.DefaultThreshold))
                 .WithNodeDeserializer(
                     inner =>
                     {
-                        var sourceInfo = new SourceInfoNodeDeserializer(
-                            new AbstractNodeNodeTypeResolver(inner, aggregateExpectationResolver, expectationResolver));
-                        sourceInfoNodeDeserializer = sourceInfo;
-                        return sourceInfo;
+                        return new SourceInfoNodeDeserializer(
+                            new AbstractNodeNodeTypeResolver(inner, aggregateExpectationResolver, expectationResolver),
+                            context);
                     },
-                     s => s.InsteadOf<ObjectNodeDeserializer>())
+                    s => s.InsteadOf<ObjectNodeDeserializer>())
                 .WithNodeDeserializer(
                     inner => new DictionaryKeyPreserverNodeDeserializer(inner),
                      s => s.InsteadOf<DictionaryNodeDeserializer>())
+                .WithNodeDeserializer(new ArrNodeDeserializer())
+
                 // more: https://github.com/aaubry/YamlDotNet/wiki/Serialization.Deserializer
                 .Build();
         }
 
-        public IDeserializer YamlDeserializer { get; private set; }
-        public IEnumerable<ITestCaseImporter> Importers { get; private set; }
-
-        public async Task<(Config, Seq<Error>)> Deserialize(FileInfo configFile)
-        {
-            Logger.LogDebug("Loading config file: {file}", configFile);
-            sourceInfoNodeDeserializer.CurrentSource = configFile.FullName;
-            using var reader = configFile.OpenText();
-
-            var config = YamlDeserializer.Deserialize<Config>(reader);
-            sourceInfoNodeDeserializer.CurrentSource = null;
-
-            Logger.LogDebug("Normalizing config file: {file}", configFile);
-            var errors = await Normalize(config, configFile);
-
-            // TODO: call validation?
-
-            Logger.LogDebug("Finished loading config file: {file}", configFile);
-            return (config, errors);
-        }
-
-        private async ValueTask<Seq<Error>> Normalize(Config original, FileInfo filePath)
+        private async ValueTask<Seq<Error>> Normalize(Config original, IFileInfo filePath)
         {
             original.Location = filePath;
             Seq<Error> errors = Empty;
@@ -94,50 +119,72 @@ namespace Egret.Cli.Serialization
             foreach (var (name, suite) in original.TestSuites)
             {
                 // resolve includes
-                errors += await importer.LoadImportedTestCases(suite, original);
+                errors += await importer.LoadImportedTestCases(suite, original, this);
 
-                var newTests = NormalizeTests(suite.Tests);
-                var newIncludes = suite.IncludeTests.Select(include => include with { Tests = NormalizeTests(include.Tests) });
-                suite.Tests = newTests;
-                suite.IncludeTests = newIncludes.ToArray();
+                var (newErrors, newTests) = NormalizeTests(suite.Tests);
+                errors += newErrors.ToSeq();
+                var newIncludes = suite.IncludeTests.Select(include =>
+                {
+                    var (includeErrors, includeTests) = NormalizeTests(include.Tests);
+                    errors += newErrors.ToSeq();
+                    return include with { Tests = includeTests.ToArr() };
+                });
+                suite.Tests = newTests.ToArr();
+                suite.IncludeTests = newIncludes;
             }
 
             return errors;
         }
 
-        private TestCase[] NormalizeTests(TestCase[] tests)
+        public (IEnumerable<Error> Errors, IEnumerable<TestCase> Tests) NormalizeTests(Arr<TestCase> tests)
         {
-            return tests.SelectMany(ExpandFileGlobs).Select(GenerateAutoLabelPresenceSegmentTest).ToArray();
+            var normalized = tests
+                .Collect(t => ExpandFileGlobs(fileSystem, t))
+                .Select(GenerateAutoLabelPresenceSegmentTest);
+
+            return normalized.Partition();
         }
 
-        //TODO
-        public static IEnumerable<TestCase> ExpandFileGlobs(TestCase testCase)
+        public static IEnumerable<Fin<TestCase>> ExpandFileGlobs(IFileSystem fileSystem, TestCase testCase)
         {
-            if (testCase?.File is { Length: < 1 } || !MultiGlob.TestIfMultiGlob(testCase.File))
+            if (testCase?.File is null or "")
             {
                 yield return testCase;
                 yield break;
             }
 
-            var glob = MultiGlob.Parse(testCase.File);
-            var directory = Path.GetDirectoryName(testCase.SourceInfo.Source);
-            var count = 0;
-            foreach (var result in glob.GetResultsInFullPath(directory))
+            var directory = fileSystem.Path.GetDirectoryName(testCase.SourceInfo.Source);
+            var results = PathResolver.ResolvePathOrGlob(fileSystem, testCase.File, directory).ToArr();
+
+            int count = 0;
+            bool moreThanOne = results.Count > 1;
+            foreach (var result in results)
             {
-                yield return testCase with
+                count++;
+                yield return result.Map(Make);
+            }
+
+            TestCase Make(string path)
+            {
+                var newName = testCase.Name switch
                 {
-                    Name = (testCase.Name ?? "") + "#" + count,
-                    File = result,
-                    // TODO: needed?
-                    SourceInfo = testCase.SourceInfo,
+                    string s when !moreThanOne => s,
+                    null or "" => "#" + count,
+                    string s when Regex.Match(s, "#\\d+$").Success => s,
+                    string s => s + "#" + count
                 };
 
-                count++;
+                return testCase with
+                {
+                    Name = newName,
+                    File = path,
+                    SourceInfo = testCase.SourceInfo,
+                };
             }
         }
 
         /// <summary>
-        /// Automatically generates a segment-level label presence expectation for each tag type tested by an expectation.
+        /// /// Automatically generates a segment-level label presence expectation for each tag type tested by an expectation.
         /// i.e. If we have an expectation that tests for a  Koala between [1.5, 500, 3.5, 1200], that event-level expectation exists.
         /// So we also generate a LabelPresence segment-level expectation so we can test if any Koala labelled event exists within the segment.
         /// This automatic test generation allows us to generate both event and segment level tests easily.
@@ -148,29 +195,28 @@ namespace Egret.Cli.Serialization
         /// </summary>
         /// <param name="cases"></param>
         /// <returns></returns>
-        TestCase GenerateAutoLabelPresenceSegmentTest(TestCase test)
+        public static TestCase GenerateAutoLabelPresenceSegmentTest(TestCase test)
         {
 
             // first collect unique tags
             var eventExcpectations = test.Expect.OfType<Expectation>();
-            var expectedLabels = eventExcpectations
-                .SelectMany(e => e.AnyLabel.Append(e.Label))
-                .WhereNotNull()
-                .Distinct();
+            var expectedLabels = eventExcpectations.SelectMany(Extract).Distinct();
 
             // now see if we already have any label present expectations
-            var segmentExcpectations = test.Expect.OfType<LabelPresent>().ToDictionary(x => x.Label);
+            var segmentExcpectationsMatch = test.Expect.OfType<LabelPresent>().Where(x => x.Match).ToDictionary(x => x.Label);
+            var segmentExcpectationsNoMatch = test.Expect.OfType<LabelPresent>().Where(x => x.Match).ToDictionary(x => x.Label);
             var newExpectations = Lst<IExpectation>.Empty;
-            foreach (var label in expectedLabels)
+            foreach (var (label, match) in expectedLabels)
             {
-                if (segmentExcpectations.TryGetValue(label, out var labelPresent))
+                var relevantList = match ? segmentExcpectationsMatch : segmentExcpectationsNoMatch;
+                if (relevantList.TryGetValue(label, out var labelPresent))
                 {
                     // we don't need another one
                     continue;
                 }
 
                 // nothing present, let's add one
-                newExpectations += new LabelPresent() { Label = label };
+                newExpectations += new LabelPresent() { Label = label, Match = match };
             }
 
             // return the test with augmented expectations
@@ -178,6 +224,9 @@ namespace Egret.Cli.Serialization
             {
                 Expect = test.Expect.Append(newExpectations).ToArray()
             };
+
+            IEnumerable<(string Label, bool match)> Extract(Expectation e)
+                => e.AnyLabel.Append(e.Label).WhereNotNull().Select(l => (l, e.Match));
         }
     }
 

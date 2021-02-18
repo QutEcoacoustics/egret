@@ -225,10 +225,10 @@ namespace Egret.Cli.Processing
             // TODO: ADD WARNING WHEN NO FILES FOUND
         }
 
-        private List<ExpectationResult> AssessResults(IExpectation[] expectations, IReadOnlyList<NormalizedResult> actual)
+        private List<ExpectationResult> AssessResults(IReadOnlyList<IExpectation> expectations, IReadOnlyList<NormalizedResult> actual)
         {
-            var results = new List<ExpectationResult>(expectations.Length);
-            logger.LogTrace("Assesing {count} expectations", expectations.Length);
+            var results = new List<ExpectationResult>(expectations.Count);
+            logger.LogTrace("Assesing {count} expectations", expectations.Count);
             foreach (var expectation in expectations)
             {
                 results.AddRange(expectation.Test(actual, Suite));

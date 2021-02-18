@@ -1,11 +1,13 @@
 
 using Egret.Cli.Serialization;
 using Egret.Cli.Serialization.Yaml;
+using LanguageExt;
 using MoreLinq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using YamlDotNet.Serialization;
+using static LanguageExt.Prelude;
 
 namespace Egret.Cli.Models
 {
@@ -37,9 +39,9 @@ namespace Egret.Cli.Models
             }
         }
 
-        public TestCase[] Tests { get; set; } = Array.Empty<TestCase>();
+        public Arr<TestCase> Tests { get; set; } = Empty;
 
-        public TestCaseInclude[] IncludeTests { get; set; } = Array.Empty<TestCaseInclude>();
+        public Arr<TestCaseInclude> IncludeTests { get; set; } = Empty;
 
         string IKeyedObject.Key { get; set; }
 
@@ -47,10 +49,8 @@ namespace Egret.Cli.Models
 
         public IEnumerable<TestCase> GetAllTests()
         {
-
-            // in cases where there are no tests defined in the config file, this array might be deserialized as null
-            // (maybe they're included from another source? see includes?)
-            return (Tests ?? Enumerable.Empty<TestCase>()).Concat(IncludeTests.SelectMany(i => i.Tests));
+            // functional collections result in no null reference errors
+            return Tests.Concat(IncludeTests.SelectMany(i => i.Tests));
         }
     }
 
@@ -70,7 +70,7 @@ namespace Egret.Cli.Models
     /// </remarks>
     public class Suite : TestCaseSet
     {
-        public string[] LabelAliases { get; init; } = Array.Empty<string>();
+        public string[] LabelAliases { get; init; } = System.Array.Empty<string>();
 
         public Dictionary<string, Dictionary<string, object>> ToolConfigs { get; init; }
     }

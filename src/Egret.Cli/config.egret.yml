@@ -67,8 +67,8 @@ test_suites:
 common_tests:
   geophony:
     - file: windy.wav
-      expect:
         - segment_with: event_count
+      expect:
     - file: rainy.wav
       expect:
         - segment_with: event_count

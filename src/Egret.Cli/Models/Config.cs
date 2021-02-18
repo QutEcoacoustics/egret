@@ -1,23 +1,16 @@
-
-using StringTokenFormatter;
 using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Numerics;
-using System.Text.Unicode;
-using YamlDotNet.Core.Tokens;
-using YamlDotNet.RepresentationModel;
+using System.IO.Abstractions;
 using YamlDotNet.Serialization;
 
 namespace Egret.Cli.Models
 {
     public class Config
     {
-        public Dictionary<string, Tool> Tools { get; init; }
+        public Dictionary<string, Tool> Tools { get; init; } = new Dictionary<string, Tool>();
 
-        public Dictionary<string, Suite> TestSuites { get; init; }
+        public Dictionary<string, Suite> TestSuites { get; init; } = new Dictionary<string, Suite>();
 
-        public Dictionary<string, TestCase[]> CommonTests { get; init; }
+        public Dictionary<string, TestCase[]> CommonTests { get; init; } = new Dictionary<string, TestCase[]>();
 
         /// <summary>
         /// Stores the FileInfo (and path) to the file from which this config was read.
@@ -27,6 +20,6 @@ namespace Egret.Cli.Models
         /// This is used to resolve relative paths to files from inside the config files.
         /// </remarks>
         [YamlIgnore]
-        public FileInfo Location { get; internal set; }
+        public IFileInfo Location { get; internal set; }
     }
 }

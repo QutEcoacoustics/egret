@@ -30,7 +30,7 @@ namespace Egret.Tests.Formatters
                 "Total segments: 99                  99                0 Prevalance:      100.00% Accuracy: 34.34% ",
                 "Results +ve:     0 TP:              34 FP:            0 Precision (PPV):       ∞ FDR:         NaN ",
                 "Results -ve:     0 FN:              65 TN:            0 FOR:                   ∞ NPV:         NaN ",
-                "                   Sensitivity: 34.34% FPR:         NaN                                           ",
+                "Results Count:  99 Sensitivity: 34.34% FPR:         NaN                                           ",
                 "                   FNR:              ∞ Specificity: NaN                                           ",
             }.Join(Environment.NewLine) + Environment.NewLine;
 
