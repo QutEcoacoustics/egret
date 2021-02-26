@@ -1,7 +1,8 @@
+using Egret.Cli.Extensions;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.IO.Abstractions;
 using System.Linq;
 
 namespace Egret.Cli.Processing
@@ -12,74 +13,77 @@ namespace Egret.Cli.Processing
         private readonly LinkedList<string> filesCreated = new();
         private readonly SortedDictionary<int, HashSet<string>> dirsCreated = new();
         private readonly ILogger<TempFactory> logger;
+        private readonly IFileSystem fileSystem;
 
-        public TempFactory(ILogger<TempFactory> logger) : this(logger, null)
+        public TempFactory(ILogger<TempFactory> logger, IFileSystem fileSystem)
+            : this(logger, fileSystem, null)
         {
         }
 
-        public TempFactory(ILogger<TempFactory> logger, string basePath)
+        public TempFactory(ILogger<TempFactory> logger, IFileSystem fileSystem, string basePath)
         {
+            this.fileSystem = fileSystem;
             this.logger = logger;
 
             if (basePath is null)
             {
-                basePath = Path.Join(Path.GetTempPath(), "egret");
+                basePath = fileSystem.Path.Join(fileSystem.Path.GetTempPath(), "egret");
             }
             else
             {
-                basePath = Path.GetFullPath(basePath);
+                basePath = fileSystem.Path.GetFullPath(basePath);
             }
 
-            Directory.CreateDirectory(basePath);
+            fileSystem.Directory.CreateDirectory(basePath);
 
             this.basePath = basePath;
         }
 
-        public FileInfo GetTempFileWithExt(string stem = null, string extension = null, bool create = false)
+        public IFileInfo GetTempFileWithExt(string stem = null, string extension = null, bool create = false)
         {
-            var filename = Path.GetRandomFileName();
+            var filename = fileSystem.Path.GetRandomFileName();
             filename = (stem ?? filename[0..7]) + '.' + (extension.TrimStart('.') ?? filename[8..11]);
 
             return GetTempFile(filename, create: create);
         }
-        public FileInfo GetTempFile(string filename = null, bool create = false)
+        public IFileInfo GetTempFile(string filename = null, bool create = false)
         {
-            var fileName = filename ?? Path.GetRandomFileName();
+            var fileName = filename ?? fileSystem.Path.GetRandomFileName();
 
-            var path = Path.Join(basePath, fileName);
+            var path = fileSystem.Path.Join(basePath, fileName);
 
             return AddFile(path, create);
         }
 
-        public FileInfo GetTempFile(string[] fragments, bool create = false)
+        public IFileInfo GetTempFile(string[] fragments, bool create = false)
         {
             var (dirs, filename) = fragments?.Length switch
             {
-                null or 0 => (basePath, Path.GetRandomFileName()),
+                null or 0 => (basePath, fileSystem.Path.GetRandomFileName()),
                 1 => (basePath, fragments[0]),
-                _ => (Path.Combine(basePath, Path.Combine(fragments[0..^2])), fragments[^1])
+                _ => (fileSystem.Path.Combine(basePath, fileSystem.Path.Combine(fragments[0..^2])), fragments[^1])
             };
 
-            var path = Path.Join(dirs, filename);
+            var path = fileSystem.Path.Join(dirs, filename);
 
             AddDirectory(Math.Max(0, (fragments?.Length ?? 0) - 1), dirs);
 
             return AddFile(path, create);
         }
 
-        public DirectoryInfo GetTempDir(params string[] directories)
+        public IDirectoryInfo GetTempDir(params string[] directories)
         {
 
             if (directories is null or Array { Length: 0 })
             {
-                directories = new[] { Path.GetRandomFileName() };
+                directories = new[] { fileSystem.Path.GetRandomFileName() };
             }
 
-            var path = Path.Join(basePath, Path.Join(directories));
+            var path = fileSystem.Path.Join(basePath, fileSystem.Path.Join(directories));
 
             AddDirectory(directories.Length, path);
 
-            return new DirectoryInfo(path);
+            return fileSystem.DirectoryInfo.FromDirectoryName(path);
         }
 
         public void Dispose()
@@ -90,7 +94,7 @@ namespace Egret.Cli.Processing
             {
                 try
                 {
-                    File.Delete(path);
+                    fileSystem.File.Delete(path);
                 }
                 catch (Exception ex)
                 {
@@ -105,7 +109,7 @@ namespace Egret.Cli.Processing
                 {
                     try
                     {
-                        Directory.Delete(path, true);
+                        fileSystem.Directory.Delete(path, true);
                     }
                     catch (Exception ex)
                     {
@@ -120,15 +124,15 @@ namespace Egret.Cli.Processing
             dirsCreated.TryAdd(depth, new());
             if (dirsCreated[depth].Add(path))
             {
-                Directory.CreateDirectory(path);
+                fileSystem.Directory.CreateDirectory(path);
             }
         }
 
-        private FileInfo AddFile(string path, bool create)
+        private IFileInfo AddFile(string path, bool create)
         {
             filesCreated.AddLast(path);
 
-            var file = new FileInfo(path);
+            var file = fileSystem.FileInfo.FromFileName(path);
             if (create)
             {
                 file.Create();

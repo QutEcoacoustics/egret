@@ -78,7 +78,7 @@ namespace Egret.Cli.Processing
 
                     foreach (var @case in suite.GetAllTests())
                     {
-                        yield return factory.Create(@case, tool, suite, new CaseTracker(caseIndex, toolIndex, suiteIndex));
+                        yield return factory.Create(@case, tool, suite, config, new CaseTracker(caseIndex, toolIndex, suiteIndex));
                         caseIndex++;
                     }
 

@@ -1,13 +1,16 @@
 
+using Egret.Cli.Extensions;
 using Egret.Cli.Processing;
 using Egret.Cli.Serialization.Yaml;
 using LanguageExt;
+using LanguageExt.ClassInstances;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
+using YamlDotNet.Core.Tokens;
 using static LanguageExt.Prelude;
 
 namespace Egret.Cli.Models
@@ -34,8 +37,7 @@ namespace Egret.Cli.Models
 
         public abstract bool TryGetValue<T>(string key, out T value, StringComparison comparison = StringComparison.InvariantCulture);
 
-        private Validation<string, KeyedValue<string>>? label;
-        // private Validation<string, KeyedValue<string[]>>? labels;
+        private Validation<string, KeyedValue<IEnumerable<string>>>? labels;
         private Validation<string, KeyedValue<double>>? start;
         private Validation<string, KeyedValue<double>>? centroidStart;
         private Validation<string, KeyedValue<double>>? end;
@@ -45,8 +47,22 @@ namespace Egret.Cli.Models
         private Validation<string, KeyedValue<double>>? bandwidth;
         private Validation<string, KeyedValue<double>>? duration;
 
-        public Validation<string, KeyedValue<string>> Label => label ??= Munging.TryNames<string>(this, Munging.LabelNames);
-        // public Validation<string, KeyedValue<string[]>> Labels => labels ??= Munging.TryNames<string[]>(this, Munging.LabelsNames);
+        public Validation<string, KeyedValue<IEnumerable<string>>> Labels
+        {
+            get
+            {
+                return labels ??= Evaluate();
+
+                Validation<string, KeyedValue<IEnumerable<string>>> Evaluate()
+                {
+                    var a = Munging.TryNames<string>(this, Munging.LabelNames)
+                            .Map(kv => new KeyedValue<IEnumerable<string>>(kv.Key, kv.Value.One()));
+                    var b = Munging.TryNames<IEnumerable<string>>(this, Munging.LabelsNames);
+                    return a.Or(b);
+                }
+            }
+        }
+
         public Validation<string, KeyedValue<double>> Start => start ??= Munging.TryNames<double>(this, Munging.StartNames);
         public Validation<string, KeyedValue<double>> End => end ??= Munging.TryNames<double>(this, Munging.EndNames);
         public Validation<string, KeyedValue<double>> Low => low ??= Munging.TryNames<double>(this, Munging.LowNames);
@@ -144,15 +160,17 @@ namespace Egret.Cli.Models
         public override string ToString()
         {
 
-            return $"{SourceInfo.ToString(true)}: Label={Format(Label)} Start={Format(Start)} End={Format(End)} Low={Format(Low)} High={Format(High)}";
+            return $"{SourceInfo.ToString(true)}: Label[s]={Format(Labels)} Start={Format(Start)} End={Format(End)} Low={Format(Low)} High={Format(High)}";
 
             static string Format<T>(Validation<string, KeyedValue<T>> validation)
             {
                 return validation.Match(
-                    Succ: (s) => $"{{{s.Key}: {s.Value}}}",
+                    Succ: (s) => $"{{{s.Key}: {FormatValue(s.Value)}}}",
                     Fail: (errors) => "ERROR:" + errors.Join(";", "\"")
                 );
             }
+
+            static string FormatValue<T>(T value) => value is IEnumerable<string> list ? list.JoinIntoSetNotation() : value.ToString();
         }
 
     }

@@ -29,6 +29,8 @@ namespace Egret.Cli.Processing
             "names"
         };
 
+        public static readonly IEnumerable<string> LabelAndLabelsNames = LabelsNames.Concat(LabelNames);
+
         public static readonly IEnumerable<string> StartNames = new string[]
         {
             "start",
@@ -119,10 +121,7 @@ namespace Egret.Cli.Processing
 
         private static IEnumerable<string> GenerateNames(string name)
         {
-            foreach (var (_, convention) in NamingConventions)
-            {
-                yield return convention(name);
-            }
+            return NamingConventions.Select(convention => convention.Value(name)).Distinct();
         }
 
         public static Validation<string, KeyedValue<T>> TryNames<T>(ITryGetValue subject, IEnumerable<string> names)

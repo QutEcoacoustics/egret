@@ -17,6 +17,7 @@ namespace Egret.Cli.Hosting
             (success, result) = value switch
             {
                 FileSystemInfo i => (true, new ScalarValue(i.ToString())),
+                System.IO.Abstractions.IFileSystemInfo i => (true, new ScalarValue(i.ToString())),
                 Interval i => (true, new ScalarValue(i.ToString())),
                 _ => (false, null),
             };

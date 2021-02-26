@@ -14,7 +14,7 @@ namespace Egret.Cli.Models
 
         public JsonResult(JsonElement data, SourceInfo sourceInfo)
         {
-            this.SourceInfo = sourceInfo;
+            SourceInfo = sourceInfo;
             if (data.ValueKind != JsonValueKind.Object)
             {
                 throw new ArgumentException("must be a JSON Object", nameof(data));

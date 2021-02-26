@@ -14,6 +14,8 @@ using Egret.Cli.Serialization.Json;
 using System.Text.Json;
 using Egret.Cli.Models.Results;
 using Egret.Cli.Models.Expectations;
+using Egret.Cli.Models.AnalysisOutput;
+using Egret.Cli.Serialization.Avianz;
 
 namespace Egret.Cli.Processing
 {
@@ -39,13 +41,21 @@ namespace Egret.Cli.Processing
             }
         }
 
-        public CaseExecutor(ILogger<CaseExecutor> logger, ToolRunner runner, TempFactory tempFactory, HttpClient httpClient, DefaultJsonSerializer resultDeserializer)
+        public CaseExecutor(
+            ILogger<CaseExecutor> logger,
+            ToolRunner runner,
+            TempFactory tempFactory,
+            HttpClient httpClient,
+            DefaultJsonSerializer resultDeserializer,
+            AvianzDeserializer avianzDeserializer)
+
         {
             this.logger = logger;
             this.tool = runner;
             this.tempFactory = tempFactory;
             this.http = httpClient;
             this.resultDeserializer = resultDeserializer;
+            this.avianzDeserializer = avianzDeserializer;
         }
 
         public TestCase Case { get; init; }
@@ -53,13 +63,14 @@ namespace Egret.Cli.Processing
         public Tool Tool { get; init; }
 
         public CaseTracker Tracker { get; init; }
-
+        public Config Config { get; init; }
 
         private readonly ILogger<CaseExecutor> logger;
         private readonly ToolRunner tool;
         private readonly TempFactory tempFactory;
         private readonly HttpClient http;
         private readonly DefaultJsonSerializer resultDeserializer;
+        private readonly AvianzDeserializer avianzDeserializer;
 
         public async Task<TestCaseResult> InvokeAsync(int index, CancellationToken token)
         {
@@ -154,7 +165,7 @@ namespace Egret.Cli.Processing
 
         private async Task<(FileInfo, string)> FetchRemoteHttpFileAsync(Uri uri)
         {
-            var downloadDest = tempFactory.GetTempFile();
+            var downloadDest = tempFactory.GetTempFile().Unwrap();
             logger.LogTrace("Downloading {uri} to {tempFile}", uri, downloadDest);
 
             // todo: cache downloads
@@ -177,7 +188,8 @@ namespace Egret.Cli.Processing
         private async ValueTask<ToolResult> RunToolAsync(FileInfo file)
         {
             var suiteConfigForTool = Suite.ToolConfigs.GetValueOrDefault(Tool.Name);
-            var result = await tool.Run(this.Tool, file, suiteConfigForTool);
+            var configDirectory = Config.Location.Directory;
+            var result = await tool.Run(Tool, file, suiteConfigForTool, configDirectory);
             logger.LogInformation("Tool result for {file}: {toolResult} ({output})", file.Name, result.Success, result.Results.FullName);
             return result;
         }
@@ -193,6 +205,7 @@ namespace Egret.Cli.Processing
 
             foreach (var file in files)
             {
+                var sourceInfo = new SourceInfo(file.FullName);
                 // determine format
                 switch (file.Extension.ToLower())
                 {
@@ -200,7 +213,6 @@ namespace Egret.Cli.Processing
                         using (var stream = File.OpenRead(file.FullName))
                         using (var document = await JsonDocument.ParseAsync(stream))
                         {
-                            var sourceInfo = new SourceInfo(file.FullName);
                             if (document.RootElement.ValueKind == JsonValueKind.Array)
                             {
                                 foreach (var item in document.RootElement.EnumerateArray())
@@ -215,6 +227,14 @@ namespace Egret.Cli.Processing
                             {
                                 throw new ArgumentException("Results did not contain an array as root element");
                             }
+                        }
+                        break;
+                    case ".data":
+                        // avianz result files
+                        var labels = await avianzDeserializer.DeserializeLabelFile(file.FullName);
+                        foreach (var label in labels.Annotations)
+                        {
+                            yield return new AvianzResult(label, sourceInfo);
                         }
                         break;
                     default:

@@ -28,6 +28,7 @@
 			"Xunit",
 			"editorconfig",
 			"hacky",
+			"isnull",
 			"msbuild",
 			"nuget",
 			"omnisharp"
@@ -49,6 +50,7 @@
 			"titleBar.inactiveForeground": "#15202b99"
 		},
 		"peacock.color": "#FCF3AF",
+		"xml.format.enabled": false,
 	},
 	"extensions": {
 		"recommendations": [

@@ -14,6 +14,7 @@ using Egret.Cli.Extensions;
 using System.Text.RegularExpressions;
 using static LanguageExt.Prelude;
 using LanguageExt;
+using System.IO.Abstractions;
 
 namespace Egret.Cli.Processing
 {
@@ -28,16 +29,16 @@ namespace Egret.Cli.Processing
         {
             this.temp = temp;
             this.logger = logger;
-            this.timeout = appSettings.Value.ToolTimeout;
-            this.tokenFormatter = new ArgumentQuoter();
+            timeout = appSettings.Value.ToolTimeout;
+            tokenFormatter = new ArgumentQuoter();
         }
 
-        public async Task<ToolResult> Run(Tool tool, FileInfo source, Dictionary<string, object> suiteConfig)
+        public async Task<ToolResult> Run(Tool tool, FileInfo source, Dictionary<string, object> suiteConfig, IDirectoryInfo configDirectory)
         {
-            var tempDir = temp.GetTempDir();
+            var tempDir = temp.GetTempDir().Unwrap();
             var outputDir = tempDir;
 
-            var placeholders = new CommandPlaceholders(source.FullName, outputDir.FullName, tempDir.FullName);
+            var placeholders = new CommandPlaceholders(source.FullName, outputDir.FullName, tempDir.FullName, configDirectory.FullName);
             var arguments = PrepareArguments(tool.Command, suiteConfig, placeholders);
 
             logger.LogTrace("Running process: {tool} {args}", tool.Executable, arguments);
@@ -61,7 +62,10 @@ namespace Egret.Cli.Processing
             logger.LogTrace("Formatting args: {args} with parameters {@placeholders} and {@suiteConfig}", args, placeholders, suiteConfig);
             var standardPlaceholders = TokenValueContainer.FromObject(placeholders);
             var suitePlaceholders = TokenValueContainer.FromDictionary(suiteConfig);
-            var compositePlaceholders = TokenValueContainer.Combine(standardPlaceholders, suitePlaceholders);
+            var compositePlaceholders = TokenValueContainer.Combine(
+                standardPlaceholders,
+                suitePlaceholders,
+                ThrowOnMissingValueContainer.Instance);
 
 
             var parsedArgs = SegmentedString.Parse(args);
@@ -122,8 +126,6 @@ namespace Egret.Cli.Processing
                 cancelled = ex;
             }
 
-
-
             Debug.Assert(cancelled == null ? !exitTask.IsCanceled : exitTask.IsCanceled);
             if (exitTask.IsCanceled)
             {
@@ -153,6 +155,18 @@ namespace Egret.Cli.Processing
 
         public static Option<string> GetVersion(Regex versionPattern, ProcessResult result)
         {
+            if (versionPattern is null)
+            {
+                return None;
+            }
+
+            // one capture group + one implicit global group
+            if (versionPattern.GetGroupNumbers().Length != 2)
+            {
+                throw new ArgumentException("Version regex requires exactly one capture group", nameof(versionPattern));
+            }
+
+
             if (result.Output is not null)
             {
                 var match = versionPattern.Match(result.Output);
@@ -181,12 +195,27 @@ namespace Egret.Cli.Processing
             public string Format(ISegment segment, object value, string Padding, string Format)
             {
 
-                if (segment is TokenSegment && value is string s && s.Contains(' '))
+                if (segment is TokenSegment &&
+                    value is string s &&
+                    s.Contains(' ') &&
+                    !string.Equals(Format, "unquoted", StringComparison.InvariantCultureIgnoreCase))
                 {
                     return $"\"{s}\"";
                 }
 
                 return TokenValueFormatter.Default.Format(segment, value, Padding, Format);
+            }
+        }
+
+        private class ThrowOnMissingValueContainer : ITokenValueContainer
+        {
+            public static ITokenValueContainer Instance = new ThrowOnMissingValueContainer();
+            public bool TryMap(IMatchedToken matchedToken, out object mapped)
+            {
+                // the idea here is that this container is the bottom of the stack.
+                // if we got here all other containers failed and we're in an error case
+                throw new ArgumentException(
+                    $"Could not finish templating command. Missing a value for parameter `{matchedToken.Original}`");
             }
         }
 
@@ -230,5 +259,5 @@ namespace Egret.Cli.Processing
         }
     }
 
-    public record CommandPlaceholders(string Source, string Output, string TempDir);
+    public record CommandPlaceholders(string Source, string Output, string TempDir, string ConfigDir);
 }

@@ -1,10 +1,13 @@
 using Divergic.Logging.Xunit;
+using Egret.Cli;
+using Egret.Cli.Processing;
 using Egret.Cli.Serialization;
 using Egret.Cli.Serialization.Avianz;
 using Egret.Cli.Serialization.Egret;
 using Egret.Cli.Serialization.Json;
 using Egret.Tests.Serialization.Egret;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.IO.Abstractions.TestingHelpers;
@@ -34,6 +37,9 @@ namespace Egret.Tests.Support
             Loggers.Add(logger);
             return logger;
         }
+
+        protected TempFactory TempFactory => new(BuildLogger<TempFactory>(), TestFiles);
+        protected IOptions<AppSettings> AppSettings => Support.Helpers.DefaultAppSettings;
 
         protected AvianzDeserializer AvianzDeserializer => new(new DefaultJsonSerializer());
 

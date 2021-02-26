@@ -25,7 +25,7 @@ using YamlDotNet.RepresentationModel;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 using YamlDotNet.Serialization.NodeDeserializers;
-
+using YamlDotNet.Serialization.Utilities;
 using static LanguageExt.Prelude;
 
 namespace Egret.Cli.Serialization
@@ -84,7 +84,7 @@ namespace Egret.Cli.Serialization
         /// We build a new instance of a deserializer for every operation so that
         /// we can provide source context (a file path) to every read operation.
         /// </summary>
-        private IDeserializer BuildDeserializer(string context)
+        internal IDeserializer BuildDeserializer(string context)
         {
             // these resolvers allow us to deserialize to an abstract class or interface
             var aggregateExpectationResolver = new AggregateExpectationTypeResolver(NamingConvention);
@@ -105,6 +105,7 @@ namespace Egret.Cli.Serialization
                     inner => new DictionaryKeyPreserverNodeDeserializer(inner),
                      s => s.InsteadOf<DictionaryNodeDeserializer>())
                 .WithNodeDeserializer(new ArrNodeDeserializer())
+                .WithNodeDeserializer(new AliasedStringNodeDeserializer())
 
                 // more: https://github.com/aaubry/YamlDotNet/wiki/Serialization.Deserializer
                 .Build();

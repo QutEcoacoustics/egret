@@ -3,6 +3,7 @@ using Egret.Cli.Models.Avianz;
 using Egret.Cli.Processing;
 using LanguageExt;
 using LanguageExt.Common;
+using LanguageExt.UnitsOfMeasure;
 using Microsoft.Extensions.FileSystemGlobbing;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -64,7 +65,11 @@ namespace Egret.Cli.Serialization.Avianz
                 }
 
                 var dataFile = await avianzDeserializer.DeserializeLabelFile(path);
-                var expectations = dataFile.Annotations.Select((x, i) => MakeExpectationFromAnnotation(x, i, context.Include));
+                var expectations = dataFile.Annotations switch
+                {
+                    { Count: 0 } => Seq1(MakeNoEventsExpectation(path)),
+                    _ => dataFile.Annotations.Select((x, i) => MakeExpectationFromAnnotation(x, i, context.Include))
+                };
 
                 logger.LogTrace("Data file converted to expectations: {@expectations}", expectations);
 
@@ -77,7 +82,13 @@ namespace Egret.Cli.Serialization.Avianz
             }
         }
 
-        public Expectation MakeExpectationFromAnnotation(Annotation annotation, int index, TestCaseInclude include)
+        private IExpectation MakeNoEventsExpectation(string path)
+        {
+            logger.LogWarning("No annotations found in {path}, producing a no_events expectation", path);
+            return new NoEvents();
+        }
+
+        public IExpectation MakeExpectationFromAnnotation(Annotation annotation, int index, TestCaseInclude include)
         {
             var temporalTolerance = include.TemporalTolerance ?? defaultTolerance;
             var spectralTolerance = include.SpectralTolerance ?? defaultTolerance;

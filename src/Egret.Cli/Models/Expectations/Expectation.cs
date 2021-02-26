@@ -174,41 +174,42 @@ namespace Egret.Cli.Models
         }
 
         public const string NameAssertionName = "Label";
-        public Assertion TestLabel(NormalizedResult result, string[] labelAliases)
+        public Assertion TestLabel(NormalizedResult result, AliasedString labelAliases)
         {
-            return result.Label.Match(Test, notFound(NameAssertionName));
+            return result.Labels.Match(Test, notFound(NameAssertionName));
 
-            Assertion Test(KeyedValue<string> label)
+            Assertion Test(KeyedValue<IEnumerable<string>> labels)
             {
-                //var test = Label.Equals(label.Value, StringComparison.InvariantCultureIgnoreCase);
-                var test = labelAliases.MatchThroughAliases(label.Value, Label, StringComparison.InvariantCultureIgnoreCase);
-
+                var expected = labelAliases.With(Label);
+                var actualString = labels.Value.JoinMoreThanOneIntoSetNotation();
+                var test = expected.MatchAny(labels.Value, StringComparison.InvariantCultureIgnoreCase);
 
                 if (((IExpectation)this).Matches(test.IsSome))
                 {
                     var (first, second) = (ValueTuple<string, string>)test;
-                    return new SuccessfulAssertion(NameAssertionName, label.Key, $"`{label.Value}` = `{second}`");
+                    return new SuccessfulAssertion(NameAssertionName, labels.Key, $"`{first}` = `{second}`");
                 }
-                var aliases = labelAliases.Length > 0 ? ". Also checked aliases: " + labelAliases.JoinIntoSetNotation() : string.Empty;
-                return new FailedAssertion(NameAssertionName, label.Key, $"value `{label.Value}` ≠ expected `{Label}{aliases}`");
+
+                return new FailedAssertion(NameAssertionName, labels.Key, $"value `{labels.Value.JoinMoreThanOneIntoSetNotation()}` ≠ expected `{expected}` expected");
             }
         }
 
-        public const string AnlLabelAssertionName = "Any label";
-        public Assertion TestAnyLabel(NormalizedResult result, string[] labelAliases)
+        public const string AnyLabelAssertionName = "Any label";
+        public Assertion TestAnyLabel(NormalizedResult result, AliasedString labelAliases)
         {
-            return result.Label.Match(Test, notFound(AnlLabelAssertionName));
+            return result.Labels.Match(Test, notFound(AnyLabelAssertionName));
 
-            Assertion Test(KeyedValue<string> label)
+
+            Assertion Test(KeyedValue<IEnumerable<string>> labels)
             {
-                var test = AnyLabel.Any(l => labelAliases.MatchThroughAliases(l, label.Value, StringComparison.InvariantCultureIgnoreCase).IsSome);
-                if (((IExpectation)this).Matches(test))
+                var expected = labelAliases.With(AnyLabel);
+                var test = expected.MatchAny(labels.Value, StringComparison.InvariantCultureIgnoreCase);
+                if (((IExpectation)this).Matches(test.IsSome))
                 {
-                    return new SuccessfulAssertion(AnlLabelAssertionName, label.Key);
+                    return new SuccessfulAssertion(AnyLabelAssertionName, labels.Key);
                 }
 
-                var aliases = labelAliases.Length > 0 ? ". Also checked aliases: " + labelAliases.JoinIntoSetNotation() : string.Empty;
-                return new FailedAssertion(AnlLabelAssertionName, label.Key, $"value `{label.Value}` ∉ `{AnyLabel.JoinIntoSetNotation()}`{aliases}");
+                return new FailedAssertion(AnyLabelAssertionName, labels.Key, $"value `{labels.Value.JoinMoreThanOneIntoSetNotation()}` ∉ `{expected}` expected");
             }
         }
 

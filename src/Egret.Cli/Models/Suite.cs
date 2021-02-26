@@ -70,7 +70,7 @@ namespace Egret.Cli.Models
     /// </remarks>
     public class Suite : TestCaseSet
     {
-        public string[] LabelAliases { get; init; } = System.Array.Empty<string>();
+        public AliasedString LabelAliases { get; init; } = new AliasedString();
 
         public Dictionary<string, Dictionary<string, object>> ToolConfigs { get; init; }
     }

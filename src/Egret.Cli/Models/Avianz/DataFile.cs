@@ -35,7 +35,7 @@ namespace Egret.Cli.Models.Avianz
 
             foreach (var annotation in Annotations)
             {
-                yield return annotation;
+                yield return annotation with { Metadata = Metadata };
 
             }
         }

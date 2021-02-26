@@ -32,30 +32,34 @@ namespace Egret.Cli.Models
 
         public override IEnumerable<ExpectationResult> Test(IReadOnlyList<NormalizedResult> actualEvents, Suite suite)
         {
-            var aliases = suite.LabelAliases;
-            var aliasNames = aliases.Length > 0 ? ". Also checked aliases: " + aliases.JoinIntoSetNotation() : string.Empty;
+            var aliases = suite.LabelAliases.With(Label);
             Seq<Assertion> errors = Empty;
             foreach (var result in actualEvents)
             {
                 // test if result even has a label
-                switch (result.Label.Case)
+                switch (result.Labels.Case)
                 {
-                    case KeyedValue<string> label:
+                    case KeyedValue<IEnumerable<string>> labels:
                         // now test if label matches
-                        var test = aliases.MatchThroughAliases(label.Value, Label, StringComparison.InvariantCultureIgnoreCase);
+                        var test = aliases.MatchAny(labels.Value, StringComparison.InvariantCultureIgnoreCase);
                         if (((IExpectation)this).Matches(test.IsSome))
                         {
                             var (first, second) = (ValueTuple<string, string>)test;
                             // success!
-                            yield return new ExpectationResult(this, new SuccessfulAssertion(AssertionName, label.Key, $"`{label.Value}` = `{second}`"));
+                            yield return new ExpectationResult(this, new SuccessfulAssertion(AssertionName, labels.Key, $"`{first}` = `{second}`"));
                             yield break;
                         }
                         else
                         {
-                            errors = errors.Add(new FailedAssertion(Expectation.NameAssertionName, label.Key, $"value `{label.Value}` ≠ expected `{Label}{aliasNames}`"));
+                            errors = errors.Add(
+                                new FailedAssertion(
+                                    Expectation.NameAssertionName,
+                                    labels.Key,
+                                    $"value `{labels.Value.JoinMoreThanOneIntoSetNotation()}` ∉ `{aliases}`"));
                         }
 
                         break;
+
                     case Seq<string> error:
                         errors = errors.Add(new ErrorAssertion(Expectation.NameAssertionName, null, error));
                         break;

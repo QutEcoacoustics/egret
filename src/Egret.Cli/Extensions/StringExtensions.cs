@@ -1,5 +1,6 @@
 using LanguageExt;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using static LanguageExt.Prelude;
 
@@ -15,6 +16,15 @@ namespace System
         public static string JoinIntoSetNotation(this IEnumerable<string> items)
         {
             return "{" + string.Join(", ", items) + "}";
+        }
+        public static string JoinMoreThanOneIntoSetNotation(this IEnumerable<string> items)
+        {
+            if (items.Skip(1).Any())
+            {
+                return "{" + string.Join(", ", items) + "}";
+            }
+
+            return $"{items.Single()}";
         }
 
 
@@ -48,43 +58,6 @@ namespace System
         public static string NormalizeBlank(this string @string)
         {
             return string.IsNullOrWhiteSpace(@string) ? null : @string;
-        }
-
-        public static Option<(string Firstmatch, string SecondMatch)> MatchThroughAliases(
-            this IEnumerable<string> aliases,
-            string first,
-            string second,
-            StringComparison comparison
-            )
-        {
-            if (first.Equals(second, comparison))
-            {
-                return (first, second);
-            }
-
-            // otherwise look for matches through alias array
-            Option<string> firstMatch = None;
-            Option<string> secondMatch = None;
-            foreach (var alias in aliases)
-            {
-                if (firstMatch.IsNone && first.Equals(alias, comparison))
-                {
-                    firstMatch = alias;
-                }
-
-                if (secondMatch.IsNone && second.Equals(alias, comparison))
-                {
-                    secondMatch = alias;
-                }
-
-                if (firstMatch.IsSome && secondMatch.IsSome)
-                {
-                    // at some point we've accrued two matches, success!
-                    return from f in firstMatch from s in secondMatch select (f, s);
-                }
-            }
-
-            return None;
         }
     }
 }

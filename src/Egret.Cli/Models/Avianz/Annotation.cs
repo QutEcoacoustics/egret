@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using Egret.Cli.Serialization.Json.Avianz;
 using LanguageExt;
+using static LanguageExt.Prelude;
 
 namespace Egret.Cli.Models.Avianz
 {
@@ -14,7 +15,7 @@ namespace Egret.Cli.Models.Avianz
     /// </remarks>
     // Using Arr for structural equivalence so record equality behaves in a useful manner
     [JsonConverter(typeof(AnnotationConverter))]
-    public record Annotation(double Start, double End, double Low, double High, Arr<Label> Labels) : MetadataOrAnnotation;
+    public record Annotation(double Start, double End, double Low, double High, Arr<Label> Labels, Option<Metadata> Metadata = default) : MetadataOrAnnotation;
 
 
 }

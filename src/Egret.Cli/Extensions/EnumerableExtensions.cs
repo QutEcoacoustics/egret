@@ -68,5 +68,10 @@ namespace Egret.Cli.Extensions
 
             return result;
         }
+
+        public static IEnumerable<T> One<T>(this T item)
+        {
+            yield return item;
+        }
     }
 }
