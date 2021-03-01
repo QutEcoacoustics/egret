@@ -5,7 +5,7 @@ using Egret.Cli.Models.Results;
 
 namespace Egret.Cli.Models
 {
-    public class TemporalExpectation : Expectation
+    public class TemporalExpectation : EventExpectation
     {
         public TemporalExpectation() : base()
         {

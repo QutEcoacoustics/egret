@@ -20,19 +20,6 @@ namespace Egret.Cli.Models
 
     public abstract class NormalizedResult : ITryGetValue, ISourceInfo
     {
-
-        public bool IsMarked => MarkedBy is not null;
-        public IExpectation MarkedBy { get; private set; }
-
-        public void Mark(IExpectation expectation)
-        {
-            if (IsMarked)
-            {
-                throw new InvalidOperationException("Result reserved twice. This should not happen");
-            }
-            MarkedBy = expectation;
-        }
-
         public abstract SourceInfo SourceInfo { get; set; }
 
         public abstract bool TryGetValue<T>(string key, out T value, StringComparison comparison = StringComparison.InvariantCulture);
@@ -46,6 +33,17 @@ namespace Egret.Cli.Models
         private Validation<string, KeyedValue<double>>? high;
         private Validation<string, KeyedValue<double>>? bandwidth;
         private Validation<string, KeyedValue<double>>? duration;
+
+        public NormalizedResult(int index)
+        {
+            Index = index;
+        }
+
+
+        /// <summary>
+        /// The index of the result as found in the result list
+        /// </summary>
+        public int Index { get; }
 
         public Validation<string, KeyedValue<IEnumerable<string>>> Labels
         {

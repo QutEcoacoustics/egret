@@ -18,13 +18,13 @@ using Egret.Cli.Models.Results;
 namespace Egret.Cli.Models
 {
 
-    public abstract class Expectation : IEventExpectation
+    public abstract class EventExpectation : IEventExpectation
     {
-        protected Expectation()
+        protected EventExpectation()
         {
         }
 
-        protected Expectation(object context)
+        protected EventExpectation(object context)
         {
             Context = context;
         }
@@ -75,74 +75,28 @@ namespace Egret.Cli.Models
 
         public abstract IEnumerable<Assertion> TestBounds(NormalizedResult result);
 
-        public IEnumerable<ExpectationResult> Test(IReadOnlyList<NormalizedResult> actualEvents, Suite suite)
+        public IEnumerable<ExpectationResult> Test(Option<NormalizedResult> closestResult, IReadOnlyList<NormalizedResult> actualEvents, Suite suite)
         {
-            if (this.ErrorIfNoResults(actualEvents).Case is ExpectationResult error)
+
+            if (closestResult.IsNone)
             {
-                yield return error;
-                yield break;
-            }
-
-            // find closest event that has not already been matched
-            // TODO: distance measuring needs to be split into a different method otherwise it's an unfair "who matches first" system
-            var filteredEvents = actualEvents.Where(e => !e.IsMarked).ToArray();
-
-            if (!filteredEvents.Any())
-            {
-                // all results have been "reserved" and there are not enough results produced by the recognizer to satisfy the expectation
-                yield return new ExpectationResult(
-                    this,
-                    new FailedAssertion(
-                        "Not enough results",
-                        null,
-                        "There are not enough results produced to satisfy all expectations. All current results have already been matched to other expectations"
-                    )
-                );
-
                 // cannot continue for this result
-                yield break;
+                throw new InvalidOperationException();
             }
 
-            var distances = filteredEvents
-                .Select(Distance);
-            var closest = distances
-                .Index()
-                .MinBy((kvp) => kvp.Value.IfFail(double.PositiveInfinity))
-                .HeadOrNone();
-
-            if (closest.IsNone)
-            {
-                // all results encountered errors when trying to find closest
-                var allErrors = distances.Fails().ToArray();
-
-                yield return new ExpectationResult(
-                    this,
-                    new ErrorAssertion("Finding closest result", null, allErrors)
-                );
-
-                // cannot continue for this result
-                yield break;
-            }
-
-            var (closestIndex, closestDistance) = (KeyValuePair<int, Validation<string, double>>)closest;
-            var candidate = filteredEvents[closestIndex];
+            var candidate = closestResult.ValueUnsafe();
 
             List<Assertion> results = new(10);
 
-            var labelMatched = false;
             if (Label is not null)
             {
                 var labelAssertion = TestLabel(candidate, suite.LabelAliases);
-
-                labelMatched |= labelAssertion is SuccessfulAssertion;
                 results.Add(labelAssertion);
             }
 
             if (AnyLabel is not null)
             {
                 var labelAssertion = TestAnyLabel(candidate, suite.LabelAliases);
-
-                labelMatched |= labelAssertion is SuccessfulAssertion;
                 results.Add(labelAssertion);
             }
 
@@ -158,13 +112,10 @@ namespace Egret.Cli.Models
 
             if (Index is not null)
             {
-                results.Add(TestIndex(candidate, closestIndex));
+                results.Add(TestIndex(candidate));
             }
 
             results.AddRange(TestBounds(candidate));
-
-            // reserve this candidate so other events may not match it
-            candidate.Mark(this);
 
             // finally form a result
             yield return new ExpectationResult(
@@ -225,11 +176,10 @@ namespace Egret.Cli.Models
             return TestBound(Name, result.Duration, Duration.Value);
 
         }
-        public Assertion TestIndex(NormalizedResult _, int resultIndex)
+        public Assertion TestIndex(NormalizedResult result)
         {
             const string Name = "Index";
-            return TestBound(Name, new KeyedValue<double>("Index", resultIndex), Index.Value);
-
+            return TestBound(Name, new KeyedValue<double>("Index", result.Index), Index.Value);
         }
 
         internal static readonly Func<string, Func<Seq<string>, Assertion>> notFound = curry<string, Seq<string>, Assertion>(NotFound);
@@ -250,7 +200,7 @@ namespace Egret.Cli.Models
                     var result = ((IExpectation)this).Matches(expected.Contains(value));
                     return result switch
                     {
-                        false => new FailedAssertion(name, key, $"value `{value}` was not within {expected}"),
+                        false => new FailedAssertion(name, key, $"value `{value:F3}` was not within {expected}"),
                         true => new SuccessfulAssertion(name, key)
                     };
                 },

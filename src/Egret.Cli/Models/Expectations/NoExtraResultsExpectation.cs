@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Egret.Cli.Models.Expectations
 {
-    public class NoExtraResultsExpectation : IEventExpectation
+    public class NoExtraResultsExpectation : ISegmentExpectation
     {
         private const string AssertionName = "No extra events allowed";
 
@@ -15,12 +15,12 @@ namespace Egret.Cli.Models.Expectations
 
         public bool IsPositiveAssertion => false;
 
-        public IEnumerable<ExpectationResult> Test(IReadOnlyList<NormalizedResult> actualEvents, Suite suite)
+        public byte Priority => byte.MaxValue;
+
+        public IEnumerable<ExpectationResult> Test(IReadOnlyList<NormalizedResult> actualEvents, IReadOnlyList<NormalizedResult> unmatchedEvents, Suite suite)
         {
             // okay now we need to determine if there are any extra events specified!
             // on the asssumption that data is exhaustively labelled
-            var unmatchedEvents = actualEvents.Where(x => !x.IsMarked);
-
             if (!unmatchedEvents.Any())
             {
                 // no unmatched events, simply return

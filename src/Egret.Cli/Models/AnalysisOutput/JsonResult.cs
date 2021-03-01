@@ -12,7 +12,7 @@ namespace Egret.Cli.Models
         private readonly JsonElement data;
         private readonly string[] names;
 
-        public JsonResult(JsonElement data, SourceInfo sourceInfo)
+        public JsonResult(int index, JsonElement data, SourceInfo sourceInfo) : base(index)
         {
             SourceInfo = sourceInfo;
             if (data.ValueKind != JsonValueKind.Object)

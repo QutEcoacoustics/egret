@@ -389,7 +389,7 @@ namespace Egret.Cli.Models
             return $"{left}{this.Minimum.ToString(endPointFormat)}, {this.Maximum.ToString(endPointFormat)}{right}";
         }
 
-        public string ToString(bool simplify, string endPointFormat = null)
+        public string ToString(bool simplify, string endPointFormat = "F3")
         {
             return this switch
             {

@@ -12,7 +12,7 @@ using Egret.Cli.Models.Results;
 
 namespace Egret.Cli.Models
 {
-    public class BoundedExpectation : Expectation
+    public class BoundedExpectation : EventExpectation
     {
         public BoundedExpectation() : base(null)
         {

@@ -5,6 +5,8 @@ using System;
 using System.Threading;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using LanguageExt;
+using static LanguageExt.Prelude;
 
 namespace Egret.Cli.Extensions
 {
@@ -72,6 +74,35 @@ namespace Egret.Cli.Extensions
         public static IEnumerable<T> One<T>(this T item)
         {
             yield return item;
+        }
+
+        public static IEnumerable<T> Subsample<T>(this IEnumerable<T> items, int every)
+        {
+            if (every < 1) { throw new ArgumentException("every must be greater than or equal to 1", nameof(every)); }
+            var counter = 0;
+            foreach (var item in items)
+            {
+                if (counter % every == 0)
+                {
+                    yield return item;
+                }
+                counter++;
+            }
+        }
+
+        public static IEnumerable<T> Subsample<T>(this IEnumerable<T> items, Option<long> seed = default, double skew = 0.5)
+        {
+            if (skew is > 1 or < 0) { throw new ArgumentException("skew must be in [0,1]", nameof(skew)); }
+
+            var random = new Random((int)seed.IfNone(Environment.TickCount));
+
+            foreach (var item in items)
+            {
+                if (random.NextDouble() >= skew)
+                {
+                    yield return item;
+                }
+            }
         }
     }
 }

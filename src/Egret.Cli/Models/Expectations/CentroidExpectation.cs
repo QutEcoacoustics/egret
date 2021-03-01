@@ -5,7 +5,7 @@ using Egret.Cli.Models.Results;
 
 namespace Egret.Cli.Models
 {
-    public class CentroidExpectation : Expectation
+    public class CentroidExpectation : EventExpectation
     {
         public override string Name { get; init; } = "Centroid location";
 

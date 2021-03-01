@@ -35,7 +35,7 @@ namespace Egret.Cli.Models.AnalysisOutput
             propertyNames = names;
         }
 
-        public AvianzResult(Annotation data, SourceInfo sourceInfo)
+        public AvianzResult(int index, Annotation data, SourceInfo sourceInfo) : base(index)
         {
             SourceInfo = sourceInfo;
             if (data is null)

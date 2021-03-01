@@ -38,7 +38,6 @@ namespace Egret.Tests.Serialization
 
             var expected = original + MakeFromSpec(segmentLabels, segment: true);
 
-
             var actual = ConfigDeserializer.GenerateAutoLabelPresenceSegmentTest(testCase).Expect;
 
             actual.Should<Arr<IExpectation>>().BeEquivalentTo(expected);

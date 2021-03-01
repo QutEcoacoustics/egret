@@ -6,6 +6,8 @@ namespace Egret.Cli.Models
 
     public partial record SourceInfo
     {
+        public static readonly SourceInfo Unknown = new("<unknown>");
+
         public override string ToString() => ToString(shortSource: false);
 
         public string ToString(bool shortSource)

@@ -2,6 +2,7 @@ using Egret.Cli.Processing;
 using System.Collections.Generic;
 using Egret.Cli.Models.Results;
 using YamlDotNet.Serialization;
+using LanguageExt;
 
 namespace Egret.Cli.Models
 {
@@ -24,7 +25,13 @@ namespace Egret.Cli.Models
         /// <value>True for a positive assertion.</value>
         [YamlIgnore]
         bool IsPositiveAssertion { get; }
-        IEnumerable<ExpectationResult> Test(IReadOnlyList<NormalizedResult> actualEvents, Suite suite);
+
+        /// <summary>
+        /// Rough method for ordering Expectations. Some Expectations are required to run earlier or later than others.
+        /// </summary>
+        /// <value>A value in [0,256) representing priority. Lower values have higher priority.</value>
+        [YamlIgnore]
+        byte Priority { get; }
 
         public bool Matches(bool test) => Match ? test : !test;
         public Contingency Result(bool test) => (Match, IsPositiveAssertion, test) switch
@@ -48,11 +55,17 @@ namespace Egret.Cli.Models
 
     public interface IEventExpectation : IExpectation
     {
+        byte IExpectation.Priority => 64;
 
+        IEnumerable<ExpectationResult> Test(Option<NormalizedResult> closestEvent, IReadOnlyList<NormalizedResult> actualEvents, Suite suite);
+
+        Validation<string, double> Distance(NormalizedResult result);
     }
 
     public interface ISegmentExpectation : IExpectation
     {
+        IEnumerable<ExpectationResult> Test(IReadOnlyList<NormalizedResult> actualEvents, IReadOnlyList<NormalizedResult> unmatchedEvents, Suite suite);
 
+        byte IExpectation.Priority => 128;
     }
 }

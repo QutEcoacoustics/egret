@@ -12,7 +12,7 @@ using Egret.Cli.Models.Results;
 
 namespace Egret.Cli.Models
 {
-    public class LabelOnlyExpectation : Expectation
+    public class LabelOnlyExpectation : EventExpectation
     {
         public LabelOnlyExpectation() : base()
         {

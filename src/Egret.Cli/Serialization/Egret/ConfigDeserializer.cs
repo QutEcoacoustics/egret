@@ -1,4 +1,5 @@
 using Egret.Cli.Models;
+using Egret.Cli.Models.Expectations;
 using Egret.Cli.Processing;
 using Egret.Cli.Serialization.Avianz;
 using Egret.Cli.Serialization.Yaml;
@@ -185,14 +186,14 @@ namespace Egret.Cli.Serialization
         }
 
         /// <summary>
-        /// /// Automatically generates a segment-level label presence expectation for each tag type tested by an expectation.
+        /// Automatically generates a segment-level label presence expectation for each tag type tested by an expectation.
         /// i.e. If we have an expectation that tests for a  Koala between [1.5, 500, 3.5, 1200], that event-level expectation exists.
         /// So we also generate a LabelPresence segment-level expectation so we can test if any Koala labelled event exists within the segment.
         /// This automatic test generation allows us to generate both event and segment level tests easily.
         /// Note: the original method we used to infer segment-level tests was based on inference of expectations after evaluating the results.
         /// The net result was confusing because a single expectation could be both a false positive and a true positive at the same time!
         /// Thus I thought it better to simply treat each single expectation as a single one - as they were intended - and generate the
-        /// /// necessary segment-level annotation.
+        /// necessary segment-level annotation.
         /// </summary>
         /// <param name="cases"></param>
         /// <returns></returns>
@@ -200,7 +201,7 @@ namespace Egret.Cli.Serialization
         {
 
             // first collect unique tags
-            var eventExcpectations = test.Expect.OfType<Expectation>();
+            var eventExcpectations = test.Expect.OfType<EventExpectation>();
             var expectedLabels = eventExcpectations.SelectMany(Extract).Distinct();
 
             // now see if we already have any label present expectations
@@ -223,11 +224,32 @@ namespace Egret.Cli.Serialization
             // return the test with augmented expectations
             return test with
             {
-                Expect = test.Expect.Append(newExpectations).ToArray()
+                Expect = test.Expect.AddRange(newExpectations)
             };
 
-            IEnumerable<(string Label, bool match)> Extract(Expectation e)
+            IEnumerable<(string Label, bool match)> Extract(EventExpectation e)
                 => e.AnyLabel.Append(e.Label).WhereNotNull().Select(l => (l, e.Match));
+        }
+
+        /// <summary>
+        /// Automatically generate an exhaustiveness check expectation.
+        /// This will ensure any extra results are reported as errors
+        /// </summary>
+        public static TestCase GenerateNoExtraResultsExpectation(TestCase test)
+        {
+            // assume expectations are exhaustive, add an automatic test for 
+            // no extra results.
+            // TODO: make this an configurable option?
+            if (test.Expect.OfType<NoExtraResultsExpectation>().Any())
+            {
+                // expectation already defined in config, nothing else to do
+                return test;
+            }
+
+            return test with
+            {
+                Expect = test.Expect.Add(new NoExtraResultsExpectation())
+            };
         }
     }
 

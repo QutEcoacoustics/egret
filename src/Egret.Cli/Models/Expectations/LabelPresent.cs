@@ -53,7 +53,7 @@ namespace Egret.Cli.Models
                         {
                             errors = errors.Add(
                                 new FailedAssertion(
-                                    Expectation.NameAssertionName,
+                                    EventExpectation.NameAssertionName,
                                     labels.Key,
                                     $"value `{labels.Value.JoinMoreThanOneIntoSetNotation()}` ∉ `{aliases}`"));
                         }
@@ -61,7 +61,7 @@ namespace Egret.Cli.Models
                         break;
 
                     case Seq<string> error:
-                        errors = errors.Add(new ErrorAssertion(Expectation.NameAssertionName, null, error));
+                        errors = errors.Add(new ErrorAssertion(EventExpectation.NameAssertionName, null, error));
                         break;
                 }
             }

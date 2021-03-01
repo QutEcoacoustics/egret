@@ -1,7 +1,6 @@
 using Egret.Cli.Extensions;
 using Egret.Cli.Models;
 using FluentAssertions;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -9,7 +8,7 @@ using Xunit;
 
 namespace Egret.Tests.Models.AnalysisResults
 {
-    public class NormalizedResultTests
+    public partial class NormalizedResultTests
     {
         private readonly JsonElement Example = JsonDocument.Parse(@"
             {
@@ -27,7 +26,7 @@ namespace Egret.Tests.Models.AnalysisResults
         public void HasCustomToString()
         {
             //Given
-            var result = new JsonResult(Example, ExampleSource);
+            var result = new JsonResult(0, Example, ExampleSource);
 
             //When
             var actual = result.ToString();
@@ -54,7 +53,7 @@ namespace Egret.Tests.Models.AnalysisResults
                 storage.Add("labels", labels.Split(","));
             }
 
-            var result = new DictionaryResult(storage);
+            var result = new DictionaryResult(0, storage);
 
             var actual = result.Labels;
             if (expect is null)
@@ -66,36 +65,6 @@ namespace Egret.Tests.Models.AnalysisResults
             {
                 actual.IsSuccess.Should().BeTrue();
                 ((KeyedValue<IEnumerable<string>>)actual).Value.Should().Equal(expect.Split(","));
-            }
-        }
-
-        public class DictionaryResult : NormalizedResult
-        {
-            private readonly Dictionary<string, object> labels;
-            private readonly Dictionary<string, object>.KeyCollection keys;
-
-            public DictionaryResult(Dictionary<string, object> labels)
-            {
-                this.labels = labels;
-                keys = labels.Keys;
-            }
-
-            public override SourceInfo SourceInfo { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-
-            public override bool TryGetValue<T>(string key, out T value, StringComparison comparison = StringComparison.InvariantCulture)
-            {
-                var foundKey = keys.Find(k => k.Equals(key, comparison));
-                if (foundKey)
-                {
-                    var resultValue = labels[(string)foundKey];
-                    value = (T)resultValue;
-                    return true;
-                }
-                else
-                {
-                    value = default;
-                    return false;
-                }
             }
         }
     }

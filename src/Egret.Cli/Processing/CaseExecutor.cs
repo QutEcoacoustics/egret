@@ -1,4 +1,5 @@
 using LanguageExt;
+using static LanguageExt.Prelude;
 using Egret.Cli.Extensions;
 using Egret.Cli.Models;
 using Microsoft.Extensions.Logging;
@@ -16,6 +17,11 @@ using Egret.Cli.Models.Results;
 using Egret.Cli.Models.Expectations;
 using Egret.Cli.Models.AnalysisOutput;
 using Egret.Cli.Serialization.Avianz;
+using MoreLinq;
+using LanguageExt.ClassInstances;
+using MathNet.Numerics.LinearAlgebra;
+using SixLabors.ImageSharp;
+using MathNet.Numerics.LinearAlgebra.Double;
 
 namespace Egret.Cli.Processing
 {
@@ -203,8 +209,11 @@ namespace Egret.Cli.Processing
                 RecurseSubdirectories = true
             });
 
+            int index = 0;
             foreach (var file in files)
             {
+
+
                 var sourceInfo = new SourceInfo(file.FullName);
                 // determine format
                 switch (file.Extension.ToLower())
@@ -219,7 +228,7 @@ namespace Egret.Cli.Processing
                                 {
                                     if (item.ValueKind == JsonValueKind.Object)
                                     {
-                                        yield return new JsonResult(item, sourceInfo);
+                                        yield return new JsonResult(index, item, sourceInfo);
                                     }
                                 }
                             }
@@ -234,39 +243,37 @@ namespace Egret.Cli.Processing
                         var labels = await avianzDeserializer.DeserializeLabelFile(file.FullName);
                         foreach (var label in labels.Annotations)
                         {
-                            yield return new AvianzResult(label, sourceInfo);
+                            yield return new AvianzResult(index, label, sourceInfo);
                         }
                         break;
                     default:
                         throw new NotSupportedException($"Cannot result files of type {file.Extension} yet (for `{file}`)");
                 }
+
+                index++;
             }
 
-            // TODO: ADD WARNING WHEN NO FILES FOUND
+            if (index > 0)
+            {
+                logger.LogWarning("No result files were found, can't assess any results");
+            }
         }
 
         private List<ExpectationResult> AssessResults(IReadOnlyList<IExpectation> expectations, IReadOnlyList<NormalizedResult> actual)
         {
-            var results = new List<ExpectationResult>(expectations.Count);
             logger.LogTrace("Assesing {count} expectations", expectations.Count);
-            foreach (var expectation in expectations)
-            {
-                results.AddRange(expectation.Test(actual, Suite));
-            }
 
-            // okay now we need to determine if there are any extra events specified!
-            // on the asssumption that data is exhaustively labelled
-            // must be run after other-event level expectations
-            // TODO: auto generate this assertion in config deserialization
-            var noExtraResults = new NoExtraResultsExpectation();
-            results.AddRange(noExtraResults.Test(actual, Suite));
-
-            return results;
+            return ExpectationAssessment.AssessResults(expectations, actual, Suite);
         }
+
+
 
         public void Dispose()
         {
-            this.http.Dispose();
+            http.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
+
+
 }

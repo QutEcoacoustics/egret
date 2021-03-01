@@ -15,6 +15,9 @@ namespace Egret.Cli.Models
         public abstract bool Match { get; init; }
         public abstract bool IsPositiveAssertion { get; }
         public abstract string Name { get; init; }
+        public IEnumerable<ExpectationResult> Test(IReadOnlyList<NormalizedResult> actualEvents, IReadOnlyList<NormalizedResult> unmatchedEvents, Suite suite)
+            => Test(actualEvents, suite);
+
         public abstract IEnumerable<ExpectationResult> Test(IReadOnlyList<NormalizedResult> actualEvents, Suite suite);
     }
 }
