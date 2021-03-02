@@ -13,7 +13,7 @@ namespace Egret.Cli.Commands
         public static readonly ICommandHandler RunHandler = CommandHandler.Create<IHost, InvocationContext, IHelpBuilder>(Run);
         public static int Run(IHost host, InvocationContext context, IHelpBuilder help)
         {
-            var log = host.Services.GetRequiredService<ILogger<Program>>();
+            var log = host.Services.GetRequiredService<ILogger<MainCommand>>();
             log.LogDebug("Run main");
 
             help.Write(context.ParseResult.CommandResult.Command);

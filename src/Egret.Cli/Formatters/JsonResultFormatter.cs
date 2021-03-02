@@ -23,11 +23,9 @@ namespace Egret.Cli.Formatters
         private readonly JsonSerializerOptions serializerOptions;
         private readonly Utf8JsonWriter writer;
 
-        public JsonResultFormatter(TestCommandOptions options)
+        public JsonResultFormatter(OutputFile outputFile)
         {
-            var outFilename = options.Configuration.Filestem() + "_results.json";
-
-            output = options.Output.Combine(outFilename);
+            output = outputFile.GetOutputFile(".json");
             jsonWriterOptions = new JsonWriterOptions() { Indented = true };
             serializerOptions = new JsonSerializerOptions()
             {

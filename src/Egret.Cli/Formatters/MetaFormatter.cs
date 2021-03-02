@@ -20,19 +20,26 @@ namespace Egret.Cli.Formatters
         public MetaFormatter(ILogger<TestCommand> logger, TestCommandOptions options, IServiceProvider provider)
         {
             var formatters = new List<IResultFormatter>(3);
-            if (logger.PassThrough(options.Console, "Using console result formatter: {yesNo}", LogLevel.Debug))
+            if (logger.PassThrough(!options.NoConsole, "Using console result formatter: {yesNo}", LogLevel.Debug))
             {
                 formatters.Add(provider.GetRequiredService<ConsoleResultFormatter>());
             }
+
             if (logger.PassThrough(options.Json, "Using json result formatter: {yesNo}", LogLevel.Debug))
             {
                 var json = provider.GetRequiredService<JsonResultFormatter>();
                 formatters.Add(json);
                 logger.LogDebug("Writing json results to: {path}", json.Output);
             }
+
             if (logger.PassThrough(options.Html, "Using HTML result formatter: {yesNo}", LogLevel.Debug))
             {
                 formatters.Add(provider.GetRequiredService<HtmlResultFormatter>());
+            }
+
+            if (logger.PassThrough(options.Csv, "Using HTML result formatter: {yesNo}", LogLevel.Debug))
+            {
+                formatters.Add(provider.GetRequiredService<CsvResultFormatter>());
             }
 
             this.formatters = formatters;

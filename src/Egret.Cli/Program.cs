@@ -24,9 +24,10 @@ namespace Egret.Cli
         static async Task<int> Main(string[] args)
         {
             Console.OutputEncoding = Encoding.UTF8;
+            var now = DateTime.Now;
             return await BuildCommandLine()
                 // https://github.com/dotnet/command-line-api/blob/main/src/System.CommandLine.Hosting/HostingExtensions.cs
-                .UseHost(Host.CreateDefaultBuilder, HostingSetup.ConfigureAppHost)
+                .UseHost(Host.CreateDefaultBuilder, new HostingSetup(now).ConfigureAppHost)
                 // https://github.com/dotnet/command-line-api/blob/main/src/System.CommandLine/Builder/CommandLineBuilderExtensions.cs#L257
                 .UseDefaults()
                 //.UseAnsiTerminalWhenAvailable()
@@ -47,7 +48,8 @@ namespace Egret.Cli
                     configArg,
                     new Option<DirectoryInfo>("--output", description: "Set the directory to write reports to").WithAlias("-o"),
                     new Option<bool>("--json", description: "Output results to a json file").WithAlias("-j"),
-                    new Option<bool>("--console", description: "Output results in the console").WithAlias("-c"),
+                    new Option<bool>("--csv", description: "Output results to a CSV file").WithAlias("-c"),
+                    new Option<bool>("--no-console", description: "Do not output results in the console").WithAlias("-q"),
                     new Option<bool>("--html", description: "Output results to a HTML file").WithAlias("-h"),
                     new Option<bool>("--sequential", description: "Disable parallel execution").WithAlias("-s"),
                 },

@@ -57,7 +57,7 @@ namespace Egret.Cli.Hosting
 
             var queue = new BlockingCollection<string>();
 
-            // created out own little async event loop so we can run things sequentially
+            // created our own little async event loop so we can run things sequentially
             context = new AsyncContextThread();
         }
 

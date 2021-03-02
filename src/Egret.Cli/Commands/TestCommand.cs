@@ -35,11 +35,13 @@ namespace Egret.Cli.Commands
 
         public DirectoryInfo Output { get; set; } = new DirectoryInfo(Environment.CurrentDirectory);
 
-        public bool Html { get; set; }
+        public bool Html { get; set; } = false;
 
-        public bool Json { get; set; }
+        public bool Json { get; set; } = false;
 
-        public bool Console { get; set; } = true;
+        public bool NoConsole { get; set; } = false;
+
+        public bool Csv { get; set; } = false;
 
         public bool Sequential { get; set; } = false;
     }
@@ -63,7 +65,7 @@ namespace Egret.Cli.Commands
             this.logger = logger;
             this.console = console;
 
-            this.resultFormatter = metaFormatter;
+            resultFormatter = metaFormatter;
         }
         public async Task<int> InvokeAsync(InvocationContext context)
         {
