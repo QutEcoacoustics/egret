@@ -12,6 +12,7 @@ using static Egret.Cli.Models.Topology;
 using static Egret.Cli.Models.IntersectionDetails;
 using System.Collections.Generic;
 using MoreLinq;
+using System.Linq;
 
 namespace Egret.Cli.Models
 {
@@ -205,7 +206,8 @@ namespace Egret.Cli.Models
                 error ??= "Unknown format";
             }
 
-            throw new ArgumentException($"Failed to parse `{toParse.ToString()}` as an interval. {error}");
+            var input = Encoding.UTF8.GetString(toParse);
+            throw new ArgumentException($"Failed to parse `{input}` as an interval. {error}");
 
             bool ParseNumber(ReadOnlySpan<byte> span, out double value, out int consumed)
             {
@@ -342,25 +344,38 @@ namespace Egret.Cli.Models
                     return false;
                 }
 
-                if (!ParseNumber(span[1..], out var minimum, out var minConsumed))
+                int skip = 1;
+
+                if (!ParseNumber(span[skip..], out var minimum, out var minConsumed))
                 {
                     error = $"Count not parse interval minimum in {span.ToString()}";
                     return false;
                 }
 
-                if (span[minConsumed] != (byte)',')
+                skip += minConsumed;
+
+                if (span[skip] != (byte)',')
                 {
                     error = $"Missing `,` (the comma) in the interval {span.ToString()}";
                 }
 
+                skip++;
 
-                if (!ParseNumber(span[(minConsumed + 1)..], out var maximum, out var maxConsumed))
+                while (char.IsWhiteSpace((char)span[skip]))
+                {
+                    skip++;
+                }
+
+
+                if (!ParseNumber(span[skip..], out var maximum, out var maxConsumed))
                 {
                     error = $"Count not parse interval maximum in {span.ToString()}";
                     return false;
                 }
 
-                if (maxConsumed != span.Length - 1)
+                skip += maxConsumed;
+
+                if (skip != span.Length - 1)
                 {
                     error = "extra characters at end of interval";
                 }

@@ -50,19 +50,25 @@ namespace Egret.Cli.Serialization
         public double DefaultThreshold { get; }
         public IntervalTypeConverter(double defaultThreshold, bool simplify = false, string endpointFormat = null)
         {
-            this.DefaultThreshold = defaultThreshold;
+            DefaultThreshold = defaultThreshold;
             this.simplify = simplify;
             this.endpointFormat = endpointFormat;
         }
 
         public bool Accepts(Type type)
         {
-            return type == typeof(Interval);
+            return type == typeof(Interval) || type == typeof(Interval?);
         }
 
         public object ReadYaml(IParser parser, Type type)
         {
             var scalar = parser.Consume<Scalar>();
+
+            if (scalar.Value is null)
+            {
+                return type == typeof(Interval?) ? null : default;
+            }
+
             var bytes = Encoding.UTF8.GetBytes(scalar.Value);
             return Interval.FromString(bytes, DefaultThreshold);
         }
