@@ -1,3 +1,4 @@
+using Egret.Cli.Commands;
 using Egret.Cli.Models;
 using Egret.Cli.Models.Expectations;
 using Egret.Cli.Processing;
@@ -21,6 +22,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.RepresentationModel;
 using YamlDotNet.Serialization;
@@ -70,7 +72,16 @@ namespace Egret.Cli.Serialization
             Logger.LogDebug("Loading config file: {file}", configFilePath);
             var deserializer = BuildDeserializer(configFilePath);
 
-            var config = deserializer.Deserialize<Config>(reader);
+            Config config;
+            try
+            {
+                config = deserializer.Deserialize<Config>(reader);
+            }
+            catch (YamlException yex)
+            {
+                var error = Error.New(ExitCodes.ConfigurationFailure, $"Error while reading {configFilePath}:\n");
+                return (null, Seq(error, Error.New(yex), Error.New(yex?.InnerException?.Message)));
+            }
 
             Logger.LogDebug("Normalizing config file: {file}", configFilePath);
             var errors = await Normalize(config, fileSystem.FileInfo.FromFileName(configFilePath));
@@ -142,7 +153,8 @@ namespace Egret.Cli.Serialization
         {
             var normalized = tests
                 .Collect(t => ExpandFileGlobs(fileSystem, t))
-                .Select(GenerateAutoLabelPresenceSegmentTest);
+                .Select(GenerateAutoLabelPresenceSegmentTest)
+                .Select(GenerateNoExtraResultsExpectation);
 
             return normalized.Partition();
         }
