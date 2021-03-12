@@ -1,5 +1,6 @@
 using Egret.Cli.Models;
 using Egret.Cli.Models.Avianz;
+using Egret.Cli.Models.Expectations;
 using Egret.Cli.Processing;
 using LanguageExt;
 using LanguageExt.Common;
@@ -65,11 +66,16 @@ namespace Egret.Cli.Serialization.Avianz
                 }
 
                 var dataFile = await avianzDeserializer.DeserializeLabelFile(path);
-                var expectations = dataFile.Annotations switch
+                Arr<IExpectation> expectations = dataFile.Annotations switch
                 {
-                    { Count: 0 } => Seq1(MakeNoEventsExpectation(path)),
-                    _ => dataFile.Annotations.Select((x, i) => MakeExpectationFromAnnotation(x, i, context.Include))
+                    { Count: 0 } => Array(MakeNoEventsExpectation(path)),
+                    _ => dataFile.Annotations.Select((x, i) => MakeExpectationFromAnnotation(x, i, context.Include)).ToArr()
                 };
+
+                if (context.Include.Exhaustive is bool exhaustive)
+                {
+                    expectations += new NoExtraResultsExpectation() { Match = exhaustive };
+                }
 
                 logger.LogTrace("Data file converted to expectations: {@expectations}", expectations);
 
@@ -92,6 +98,7 @@ namespace Egret.Cli.Serialization.Avianz
         {
             var temporalTolerance = include.TemporalTolerance ?? defaultTolerance;
             var spectralTolerance = include.SpectralTolerance ?? defaultTolerance;
+            var overrideBounds = include.Override;
             // https://github.com/smarsland/AviaNZ/blob/57e6a2b43ceaaf871afa524a02c1035f0a50dd7e/Docs/file_format_specification.md#L6
             return annotation switch
             {
@@ -104,10 +111,10 @@ namespace Egret.Cli.Serialization.Avianz
                 _ => new BoundedExpectation(annotation)
                 {
                     Bounds = new Bounds(
-                        annotation.Start.WithTolerance(temporalTolerance),
-                        annotation.End.WithTolerance(temporalTolerance),
-                        annotation.Low.WithTolerance(spectralTolerance),
-                        annotation.High.WithTolerance(spectralTolerance)),
+                        overrideBounds?.Start ?? annotation.Start.WithTolerance(temporalTolerance),
+                        overrideBounds?.End ?? annotation.End.WithTolerance(temporalTolerance),
+                        overrideBounds?.Low ?? annotation.Low.WithTolerance(spectralTolerance),
+                        overrideBounds?.High ?? annotation.High.WithTolerance(spectralTolerance)),
                     AnyLabel = annotation.Labels.Select(x => x.Species).ToArray(),
                     Name = $"AviaNZ Annotation {index}"
                 }

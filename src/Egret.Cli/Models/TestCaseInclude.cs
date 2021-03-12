@@ -31,9 +31,21 @@ namespace Egret.Cli.Models
 
         public double? SpectralTolerance { get; init; }
 
+        public bool? Exhaustive { get; init; }
+
+        public Override Override { get; init; }
+
         [YamlIgnore]
         public Arr<TestCase> Tests { get; init; } = Empty;
 
 
+    }
+
+    public record Override
+    {
+        public Interval? Start { get; init; }
+        public Interval? End { get; init; }
+        public Interval? Low { get; init; }
+        public Interval? High { get; init; }
     }
 }
