@@ -7,6 +7,6 @@ namespace Egret.Cli
     {
         public double DefaultThreshold { get; set; } = 0.5;
 
-        public TimeSpan ToolTimeout { get; set; } = TimeSpan.FromSeconds(30.0);
+        public TimeSpan ToolTimeout { get; set; } = TimeSpan.FromSeconds(60.0);
     }
 }
