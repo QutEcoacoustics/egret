@@ -26,11 +26,25 @@ namespace Egret.Cli.Models
 
             yield return new ExpectationResult(this, assertion);
 
+            // so.. if there are events, the we need to generate a false positive for each one produced!
+            if (!success)
+            {
+                foreach (var result in actualEvents)
+                {
+                    var name = Match ? "Event not expected" : "Event expected";
+                    var message = Match ? "Event no events but this event was produced" : "Expected an event but none were produced";
+                    yield return new ExpectationResult(
+                        this,
+                        result,
+                        new FailedAssertion(name, null, message))
+                    {
+                        // we are generating an event result from a segment expectation
+                        IsSegmentResult = false
+                    };
+                }
+            }
+
         }
 
     }
-
-
-
-
 }

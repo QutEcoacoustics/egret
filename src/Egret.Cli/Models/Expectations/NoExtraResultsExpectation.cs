@@ -10,15 +10,27 @@ namespace Egret.Cli.Models.Expectations
 
         public string Name => "Extra events";
 
-        // not sure if or how we serialize this into yaml yet
-        public bool Match { get => true; init => throw new System.NotImplementedException(); }
+        /// <summary>
+        /// Whether or not this expectation should match.
+        /// In this case, if the value is <c>false</c> the expectation is skipped.
+        /// </summary>
+        /// <value><c>true</c> if extra events should generate an error.</value>
+        public bool Match { get; init; }
 
         public bool IsPositiveAssertion => false;
 
         public byte Priority => byte.MaxValue;
 
-        public IEnumerable<ExpectationResult> Test(IReadOnlyList<NormalizedResult> actualEvents, IReadOnlyList<NormalizedResult> unmatchedEvents, Suite suite)
+        public IEnumerable<ExpectationResult> Test(
+            IReadOnlyList<NormalizedResult> actualEvents,
+            IReadOnlyList<NormalizedResult> unmatchedEvents,
+            Suite suite)
         {
+            if (Match is false)
+            {
+                yield break;
+            }
+
             // okay now we need to determine if there are any extra events specified!
             // on the asssumption that data is exhaustively labelled
             if (!unmatchedEvents.Any())
@@ -29,13 +41,14 @@ namespace Egret.Cli.Models.Expectations
 
             foreach (var result in unmatchedEvents)
             {
-                var reason = "An extra event was returned from the tool. This event was not matched by any event-expectation. "
+                var reason = "This event was not matched by any event-expectation. "
                     + "If your labels are exhaustive then this is a FP, or if not, maybe a TP.";
                 yield return new ExpectationResult(
                     this,
                     result,
                     new FailedAssertion(AssertionName, null, reason)
-                );
+                )
+                { IsSegmentResult = false };
             }
         }
     }

@@ -66,7 +66,7 @@ namespace Egret.Cli.Processing
             // for each determine if they're true/false and add them to appropriate statistics
             foreach (var expectationResult in result.Results)
             {
-                var isSegment = expectationResult.Subject is AggregateExpectation;
+                var isSegment = expectationResult.IsSegmentResult;
 
                 var current = Get();
                 var one = expectationResult.Contingency.Case switch
@@ -74,7 +74,7 @@ namespace Egret.Cli.Processing
                     null when expectationResult.Subject.IsPositiveAssertion => BinaryStatistics.OneErroredPositive,
                     null when !expectationResult.Subject.IsPositiveAssertion => BinaryStatistics.OneErroredNegative,
                     Contingency contingency => contingency,
-                    _ => throw new System.NotImplementedException(),
+                    _ => throw new NotImplementedException(),
                 };
                 Set(current + one);
 

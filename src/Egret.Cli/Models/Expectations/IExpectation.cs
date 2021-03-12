@@ -34,6 +34,7 @@ namespace Egret.Cli.Models
         byte Priority { get; }
 
         public bool Matches(bool test) => Match ? test : !test;
+
         public Contingency Result(bool test) => (Match, IsPositiveAssertion, test) switch
         {
             // this could be represented with boolean expressions

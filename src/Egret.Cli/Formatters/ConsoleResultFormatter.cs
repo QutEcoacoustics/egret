@@ -123,8 +123,12 @@ namespace Egret.Cli.Formatters
         public ContainerSpan Format(int index, TestCaseResult result)
         {
             var formattedErrors = FormatErrors(result.Errors);
-            var formattedEventResults = ResultSection("Events", result.Results.Where(e => e is { Subject: IEventExpectation }));
-            var formattedAggregateResults = ResultSection("Segment tests", result.Results.Where(e => e is { Subject: ISegmentExpectation }));
+            var formattedEventResults = ResultSection(
+                "Events",
+                result.Results.Where(e => !e.IsSegmentResult));
+            var formattedAggregateResults = ResultSection(
+                "Segment tests",
+                result.Results.Where(e => e.IsSegmentResult));
 
             var performance = result.Context.ExecutionTime.TotalSeconds;
 
