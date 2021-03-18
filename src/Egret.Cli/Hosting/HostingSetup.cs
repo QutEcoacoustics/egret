@@ -17,6 +17,7 @@ using Egret.Cli.Serialization.Json;
 using YamlDotNet.Serialization.NamingConventions;
 using Egret.Cli.Serialization.Egret;
 using System.IO.Abstractions;
+using Egret.Cli.Serialization.Audacity;
 
 namespace Egret.Cli.Hosting
 {
@@ -84,11 +85,13 @@ namespace Egret.Cli.Hosting
 
             services.AddSingleton<SharedImporter>();
             services.AddSingleton<AvianzImporter>();
+            services.AddSingleton<AudacityImporter>();
             services.AddSingleton<EgretImporter>();
             services.AddSingleton((provider) => new ITestCaseImporter[] {
                 provider.GetRequiredService<SharedImporter>(),
                 provider.GetRequiredService<AvianzImporter>(),
                 provider.GetRequiredService<EgretImporter>(),
+                provider.GetRequiredService<AudacityImporter>(),
             });
             services.AddSingleton<TestCaseImporter>();
         }
