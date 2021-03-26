@@ -14,15 +14,15 @@
     using System.Linq;
     using static LanguageExt.Prelude;
 
-    public class AudacityImporter : ITestCaseImporter
+    public class Audacity3Importer : ITestCaseImporter
     {
-        private const string ProjectFileExtension = ".aup";
+        private const string ProjectFileExtension = ".aup3";
         private readonly double defaultTolerance;
         private readonly IFileSystem fileSystem;
-        private readonly ILogger<AudacityImporter> logger;
-        private readonly AudacitySerializer serializer;
+        private readonly ILogger<Audacity3Importer> logger;
+        private readonly Audacity3Serializer serializer;
 
-        public AudacityImporter(ILogger<AudacityImporter> logger, IFileSystem fileSystem, AudacitySerializer serializer,
+        public Audacity3Importer(ILogger<Audacity3Importer> logger, IFileSystem fileSystem, Audacity3Serializer serializer,
             IOptions<AppSettings> settings)
         {
             this.logger = logger;
@@ -30,7 +30,7 @@
             this.serializer = serializer;
             defaultTolerance = settings.Value.DefaultThreshold;
         }
-
+        
         public Validation<Error, Option<IEnumerable<string>>> CanProcess(string matcher, Config config)
         {
             (IEnumerable<Error> errors, IEnumerable<string> results) = PathResolver
@@ -47,14 +47,12 @@
                 : None;
         }
 
-        public async IAsyncEnumerable<TestCase> Load(
-            IEnumerable<string> resolvedSpecifications,
-            ImporterContext context)
+        public async IAsyncEnumerable<TestCase> Load(IEnumerable<string> resolvedSpecifications, ImporterContext context)
         {
             string filter = context.Include.Filter;
             if (filter is not null)
             {
-                logger.LogDebug($"Filtering Audacity tracks by name using filter '{filter}'.");
+                logger.LogDebug($"Filtering Audacity 3 tracks by name using filter '{filter}'.");
             }
             
             double temporalTolerance = context.Include.TemporalTolerance ?? defaultTolerance;
@@ -63,10 +61,9 @@
 
             foreach (string path in resolvedSpecifications)
             {
-                logger.LogTrace("Loading Audacity data file: {file}", path);
-
-                await using Stream stream = fileSystem.File.OpenRead(path);
-                Project dataFile = serializer.Deserialize(stream, path);
+                logger.LogTrace("Loading Audacity 3 data file: {file}", path);
+                
+                Project dataFile = serializer.Deserialize((FileInfoBase) new FileInfo(path));
 
                 int filteredCount = 0;
                 int availableCount = 0;
@@ -131,12 +128,11 @@
                     
                     // TODO: audacity projects can store audio files with the project file,
                     //       but the audio files are split into multiple smaller files.
-                    //       It may be too much work to extract the split audio data.
                     // File = Path.GetRelativePath(Path.GetDirectoryName(path), testFile)
                 };
             }
         }
-
+        
         private IExpectation MakeNoEventsExpectation(string path)
         {
             logger.LogWarning("No annotations found in {path}, producing a no_events expectation", path);

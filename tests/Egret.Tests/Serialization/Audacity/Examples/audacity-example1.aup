@@ -1,6 +1,6 @@
-﻿<?xml version="1.0" standalone="no" ?>
+<?xml version="1.0" standalone="no" ?>
 <!DOCTYPE project PUBLIC "-//audacityproject-1.3.0//DTD//EN" "http://audacity.sourceforge.net/xml/audacityproject-1.3.0.dtd" >
-<project xmlns="http://audacity.sourceforge.net/xml/" projname="test-labels_data" version="1.3.0" audacityversion="2.4.2" sel0="15.9714285714" sel1="24.4400000000" selLow="10.0000000000" selHigh="10000.0000000000" vpos="0" h="0.0000000000" zoom="71.6039279869" rate="44100.0" snapto="off" selectionformat="hh:mm:ss + milliseconds" frequencyformat="Hz" bandwidthformat="octaves">
+<project xmlns="http://audacity.sourceforge.net/xml/" projname="example1_data" version="1.3.0" audacityversion="2.4.2" sel0="0.0" sel1="0.0" vpos="0" h="0.0000000000" zoom="71.6039279869" rate="44100.0" snapto="off" selectionformat="hh:mm:ss + milliseconds" frequencyformat="Hz" bandwidthformat="octaves">
     <tags>
         <tag name="ARTIST" value="artist"/>
         <tag name="TITLE" value="track"/>

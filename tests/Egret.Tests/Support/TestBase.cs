@@ -45,7 +45,8 @@ namespace Egret.Tests.Support
 
         protected AvianzDeserializer AvianzDeserializer => new(new DefaultJsonSerializer());
 
-        protected AudacitySerializer AudacitySerializer => new(new DefaultXmlSerializer());
+        protected AudacitySerializer AudacitySerializer => new(BuildLogger<AudacitySerializer>(), new DefaultXmlSerializer());
+        protected Audacity3Serializer Audacity3Serializer => new(BuildLogger<Audacity3Serializer>(), AudacitySerializer);
 
         protected ConfigDeserializer BuildConfigDeserializer()
         {
@@ -53,8 +54,9 @@ namespace Egret.Tests.Support
             var shared = new SharedImporter(BuildLogger<SharedImporter>(), Helpers.DefaultNamingConvention);
             var avianz = new AvianzImporter(BuildLogger<AvianzImporter>(), TestFiles, AvianzDeserializer, Helpers.DefaultAppSettings);
             var audacity = new AudacityImporter(BuildLogger<AudacityImporter>(), TestFiles, AudacitySerializer, Helpers.DefaultAppSettings);
+            var audacity3 = new Audacity3Importer(BuildLogger<Audacity3Importer>(), TestFiles, Audacity3Serializer, Helpers.DefaultAppSettings);
             var importer = new TestCaseImporter(BuildLogger<TestCaseImporter>(), new ITestCaseImporter[] {
-                egret, shared, avianz, audacity
+                egret, shared, avianz, audacity, audacity3
             });
             return new ConfigDeserializer(
                BuildLogger<ConfigDeserializer>(),

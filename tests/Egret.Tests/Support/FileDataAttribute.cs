@@ -38,7 +38,7 @@
                 : Path.IsPathRooted(this.filePath);
             var path = isAbsolutePath
                 ? this.filePath
-                : Path.Combine(Directory.GetCurrentDirectory(), this.filePath.Trim('\\'));
+                : Path.Combine(Directory.GetCurrentDirectory(), this.filePath.TrimStart(Path.PathSeparator));
 
             if (!File.Exists(path))
             {

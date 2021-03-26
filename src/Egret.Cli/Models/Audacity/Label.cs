@@ -1,4 +1,4 @@
-﻿namespace Egret.Cli.Serialization.Audacity
+﻿namespace Egret.Cli.Models.Audacity
 {
     using System;
     using System.Xml.Serialization;

@@ -21,6 +21,8 @@ using Egret.Cli.Serialization.Audacity;
 
 namespace Egret.Cli.Hosting
 {
+    using Serialization.Xml;
+
     public class HostingSetup
     {
         private static readonly string FilterEgretConsoleName = typeof(EgretConsole).FullName;
@@ -65,8 +67,11 @@ namespace Egret.Cli.Hosting
             services.AddSingleton(_ => UnderscoredNamingConvention.Instance);
             services.AddSingleton<ConfigDeserializer>();
             services.AddSingleton<DefaultJsonSerializer>();
+            services.AddSingleton<DefaultXmlSerializer>();
             services.AddSingleton<LiterateSerializer>();
             services.AddSingleton<AvianzDeserializer>();
+            services.AddSingleton<AudacitySerializer>();
+            services.AddSingleton<Audacity3Serializer>();
 
             services.AddTransient<TempFactory>();
             services.AddTransient<Executor>();
@@ -82,9 +87,11 @@ namespace Egret.Cli.Hosting
             services.AddSingleton<CsvResultFormatter>();
             services.AddSingleton<HtmlResultFormatter>();
             services.AddSingleton<MetaFormatter>();
+            services.AddSingleton<AudacityResultFormatter>();
 
             services.AddSingleton<SharedImporter>();
             services.AddSingleton<AvianzImporter>();
+            services.AddSingleton<Audacity3Importer>();
             services.AddSingleton<AudacityImporter>();
             services.AddSingleton<EgretImporter>();
             services.AddSingleton((provider) => new ITestCaseImporter[] {
@@ -92,6 +99,7 @@ namespace Egret.Cli.Hosting
                 provider.GetRequiredService<AvianzImporter>(),
                 provider.GetRequiredService<EgretImporter>(),
                 provider.GetRequiredService<AudacityImporter>(),
+                provider.GetRequiredService<Audacity3Importer>(),
             });
             services.AddSingleton<TestCaseImporter>();
         }

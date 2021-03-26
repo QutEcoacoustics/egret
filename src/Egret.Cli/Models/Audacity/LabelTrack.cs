@@ -1,6 +1,5 @@
-﻿namespace Egret.Cli.Serialization.Audacity
+﻿namespace Egret.Cli.Models.Audacity
 {
-    using System.Collections.Generic;
     using System.Xml.Serialization;
 
     public record LabelTrack
@@ -18,16 +17,22 @@
         public int Minimized { get; init; }
 
         [XmlElement(ElementName = "label")]
-        public List<Label> Labels { get; init; }
+        public Label[] Labels { get; init; }
 
         [XmlAttribute(AttributeName = "numlabels")]
-        public int NumLabels { get => Labels.Count; init => _ = value; }
+        public int NumLabels
+        {
+            get => Labels.Length; 
+            
+            // discard value here, instead of throw or no setter, to satisfy the XML serializer
+            init => _ = value;
+        }
 
         public LabelTrack()
         {
         }
 
-        public LabelTrack(string name, int isSelected, int height, int minimized, List<Label> labels)
+        public LabelTrack(string name, int isSelected, int height, int minimized, Label[] labels)
         {
             Name = name;
             IsSelected = isSelected;
