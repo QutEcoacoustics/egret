@@ -43,6 +43,8 @@ namespace Egret.Cli.Commands
 
         public bool Csv { get; set; } = false;
 
+        public bool Audacity { get; set; } = false;
+
         public bool Sequential { get; set; } = false;
     }
 

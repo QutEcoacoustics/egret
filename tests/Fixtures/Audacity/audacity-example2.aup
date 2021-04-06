@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" standalone="no" ?>
+<!DOCTYPE project PUBLIC "-//audacityproject-1.3.0//DTD//EN" "http://audacity.sourceforge.net/xml/audacityproject-1.3.0.dtd" >
+<project xmlns="http://audacity.sourceforge.net/xml/" version="1.3.0" audacityversion="3.0.0" sel0="0.18857142857142856" sel1="2.477142857142857" selLow="1230.769287109375" selHigh="7160.8388671875" vpos="0" h="0" zoom="116.66666666666667" rate="22050" snapto="off" selectionformat="hh:mm:ss + milliseconds" frequencyformat="Hz" bandwidthformat="octaves">
+    <tags>
+        <tag name="encoder" value="Lavc58.35.100 libvorbis" />
+    </tags>
+    <wavetrack name="eco_265126_167997_3775_15" isSelected="1" height="150" minimized="0" channel="2" linked="0" mute="0" solo="0" rate="22050" gain="1" pan="0" colorindex="0" sampleformat="262159">
+        <waveclip offset="0" colorindex="0">
+            <sequence maxsamples="262144" sampleformat="262159" numsamples="330750">
+                <waveblock start="0" blockid="1" />
+                <waveblock start="262144" blockid="2" />
+            </sequence>
+            <envelope numpoints="0" />
+        </waveclip>
+    </wavetrack>
+    <labeltrack name="Label Track" isSelected="1" height="73" minimized="0" numlabels="3">
+        <label t="0.18857142857142856" t1="2.477142857142857" selLow="1230.769287109375" selHigh="7160.8388671875" title="label 3" />
+        <label t="1.2257142857142858" t1="2.52" selLow="2237.76220703125" selHigh="5874.1259765625" title="label 1" />
+        <label t="5.854285714285714" t1="7.808571428571428" selLow="1342.6573486328125" selHigh="7440.5595703125" title="label 2" />
+    </labeltrack>
+</project>

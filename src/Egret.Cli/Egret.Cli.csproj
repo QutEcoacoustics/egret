@@ -24,9 +24,11 @@
 
     <PackageReference Include="Microsoft.Data.Analysis" Version="0.4.0" />
 
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.9" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="3.1.9" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.9" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="5.0.4" />
+    
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0" />
     <PackageReference Include="morelinq" Version="3.3.2" />
     <PackageReference Include="Nito.AsyncEx" Version="5.1.0" />
 

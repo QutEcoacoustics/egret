@@ -18,7 +18,7 @@ namespace Egret.Cli.Processing
     /// glob = standard_blob 
     /// </code>
     /// For standard glob syntax see docs.microsoft.com/en-us/dotnet/api/microsoft.extensions.filesystemglobbing.matcher?view=dotnet-plat-ext-5.0
-    /// <summary>
+    /// </summary>
     public class MultiGlob : Matcher
     {
 
