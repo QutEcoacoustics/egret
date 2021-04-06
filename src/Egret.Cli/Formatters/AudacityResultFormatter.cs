@@ -1,12 +1,11 @@
 ﻿namespace Egret.Cli.Formatters
 {
-    using Extensions;
     using Models.Audacity;
     using Models.Results;
     using Processing;
     using Serialization.Audacity;
+    using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
@@ -18,15 +17,11 @@
     {
         private readonly OutputFile outputFile;
         private readonly AudacitySerializer serializer;
-        private readonly List<FileInfo> outputFiles;
-
-        public IReadOnlyCollection<FileInfo> OutputFiles => new ReadOnlyCollection<FileInfo>(outputFiles);
 
         public AudacityResultFormatter(OutputFile outputFile, AudacitySerializer serializer)
         {
             this.outputFile = outputFile;
             this.serializer = serializer;
-            this.outputFiles = new List<FileInfo>();
         }
 
         public ValueTask DisposeAsync()
@@ -58,53 +53,100 @@
 
         private (FileInfo, Project) BuildProject(int index, TestCaseResult result)
         {
-            var sourceFile = new FileInfo(result.Context.SourceName);
-            var sourceName = sourceFile.Filestem();
-
-            var outputBaseFile = outputFile.GetOutputFile(".aup");
-            var outputName = outputBaseFile.Filestem();
-
-            var outputFullName = outputName + "_" + sourceName;
-            var outputFullFile = new FileInfo(Path.Combine(outputBaseFile.DirectoryName, outputFullName + ".aup"));
-
-            this.outputFiles.Add(outputFullFile);
-
-            // TODO: Goal is to output all information for one test file into one Audacity project file.
-            // Include data about the suite, tool, type(segment|event)
-            // each track shows the results for one tool's output (events only)
-            // segment output is for the whole audio file, and can be stored in the tags
+            var sourceName = Path.GetFileNameWithoutExtension(result.Context.SourceName);
+            var resultFile = outputFile.GetOutputFile(".aup", sourceName);
 
             // store the outcome and context
+            var outcome = result.Success ? "All expectations passed" : "One or more expectations failed";
             var tags = new List<Tag>
             {
-                new Tag("OverallOutcome",
-                    result.Success ? "All expectations passed" : "One or more expectations failed"),
-                new Tag(nameof(result.Context.SourceName), result.Context.SourceName),
-                new Tag(nameof(result.Context.SuiteName), result.Context.SuiteName),
-                new Tag(nameof(result.Context.TestName), result.Context.TestName),
-                new Tag(nameof(result.Context.ToolName), result.Context.ToolName),
-                new Tag(nameof(result.Context.ToolVersion), result.Context.ToolVersion),
-                new Tag(nameof(result.Context.CaseTracker), result.Context.CaseTracker.ToString()),
-                new Tag(nameof(result.Context.ExecutionIndex), result.Context.ExecutionIndex.ToString()),
-                new Tag(nameof(result.Context.ExecutionTime), result.Context.ExecutionTime.ToString()),
-                new Tag(nameof(result.Context.ExecutionTime), result.Context.ExecutionTime.ToString()),
+                new("OverallOutcome", outcome),
+                new("ResultIndex", index.ToString()),
+                new(nameof(result.Context.SourceName), result.Context.SourceName),
+                new(nameof(result.Context.SuiteName), result.Context.SuiteName),
+                new(nameof(result.Context.TestName), result.Context.TestName),
+                new(nameof(result.Context.ToolName), result.Context.ToolName),
+                new(nameof(result.Context.ToolVersion), result.Context.ToolVersion),
+                new(nameof(result.Context.CaseTracker), result.Context.CaseTracker.ToString()),
+                new(nameof(result.Context.ExecutionIndex), result.Context.ExecutionIndex.ToString()),
+                new(nameof(result.Context.ExecutionTime), result.Context.ExecutionTime.ToString()),
             };
 
-            tags.AddRange(result.Errors
-                .Select((error, errorIndex) => new Tag($"Error{errorIndex:D2}", error)));
+            // record any errors
+            tags.AddRange(result.Errors.Select((error, errorIndex) =>
+                new Tag($"Error{errorIndex:D2}", error))
+            );
 
-            // store the results
-            var tracks = new List<LabelTrack>();
+            // convert results to tracks and labels
+            var eventTruePositives = new List<Label>();
+            var eventFalsePositives = new List<Label>();
+            var eventTrueNegatives = new List<Label>();
+            var eventFalseNegatives = new List<Label>();
 
-            // TODO: convert results to tracks and labels
-            result.Results.Select(r => r);
+            foreach (var expectationResult in result.Results)
+            {
+                // TODO: add event expectation result to TP, FP, TN, FN label list
+                // TODO: add segment-level result as a tag
+
+                var isSuccessful = expectationResult.Successful;
+                var isSegment = expectationResult.IsSegmentResult;
+
+                var subject = expectationResult.Subject;
+                var subjectName = subject.Name ?? String.Empty;
+                var isPositiveAssertion = subject.IsPositiveAssertion;
+
+                var target = expectationResult.Target;
+
+                var truePositive = expectationResult.Contingency == Contingency.TruePositive;
+                var falsePositive = expectationResult.Contingency == Contingency.FalsePositive;
+                var trueNegative = expectationResult.Contingency == Contingency.TrueNegative;
+                var falseNegative = expectationResult.Contingency == Contingency.FalseNegative;
+
+                foreach (var assertion in expectationResult.Assertions)
+                {
+                    switch (assertion)
+                    {
+                        case SuccessfulAssertion successfulAssertion:
+
+                            break;
+                        case ErrorAssertion errorAssertion:
+
+                            break;
+                        case FailedAssertion failedAssertion:
+
+                            break;
+                        default:
+                            throw new NotImplementedException(
+                                $"Unable to process assertion of type '{assertion.GetType()}'.");
+                    }
+                }
+            }
+
+            // create 4 tracks for TP, FP, TN, FN labels
+            var tracks = new List<LabelTrack>
+            {
+                new("EvTP", 1, 100, 0, eventTruePositives.ToArray()),
+                new("EvFP", 1, 100, 0, eventFalsePositives.ToArray()),
+                new("EvTN", 1, 100, 0, eventTrueNegatives.ToArray()),
+                new("EvFN", 1, 100, 0, eventFalseNegatives.ToArray()),
+            };
 
             // build the audacity project
             var project = new Project
             {
-                Tags = tags.ToArray(), Tracks = tracks.ToArray(), ProjectName = $"{outputFullName}_data",
+                Tags = tags.ToArray(),
+                Tracks = tracks.ToArray(),
+                ProjectName = $"{sourceName}_data",
+                Version = "1.3.0",
+                AudacityVersion = "2.4.2",
+                Rate = 44100,
+                SnapTo = "off",
+                SelectionFormat = "hh:mm:ss + milliseconds",
+                FrequencyFormat = "Hz",
+                BandwidthFormat = "octaves"
             };
-            return (outputFullFile, project);
+
+            return (resultFile, project);
         }
     }
 }

@@ -117,7 +117,7 @@
             var settings = new XmlWriterSettings
             {
                 Async = true,
-                Encoding = Encoding.UTF8,
+                Encoding = new UTF8Encoding(false), // do not include the XML UTF BOM
                 NamespaceHandling = NamespaceHandling.OmitDuplicates,
                 Indent = true,
                 OmitXmlDeclaration = false,

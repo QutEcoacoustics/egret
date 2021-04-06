@@ -22,17 +22,4 @@
         </PackageReference>
         <ProjectReference Include="../../src/Egret.Cli/Egret.Cli.csproj" />
     </ItemGroup>
-
-    <ItemGroup>
-      <None Update="Serialization\Audacity\Examples\audacity-example1.aup">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="Serialization\Audacity\Examples\audacity-example2.aup">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="Serialization\Audacity\Examples\audacity-example2.aup3">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-    </ItemGroup>
-
 </Project>

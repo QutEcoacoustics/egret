@@ -69,7 +69,8 @@
         /// </summary>
         /// <param name="fileInfo"></param>
         /// <remarks>
-        /// See https://github.com/audacity/audacity/blob/2c47dc5ba1a91c87a457ffba6caf8b1baf706279/src/ProjectFileIO.cpp
+        /// Implemented from reverse engineering and learning from code at
+        /// https://github.com/audacity/audacity/blob/2c47dc5ba1a91c87a457ffba6caf8b1baf706279/src/ProjectFileIO.cpp
         /// </remarks>
         /// <returns></returns>
         private Dictionary<string, string> GetAudacityFormatInfo(IFileInfo fileInfo)
@@ -91,11 +92,15 @@
                 }
             });
 
-            var applicationId = string.Join("",
-                System.Text.Encoding.Default.GetString(BitConverter.GetBytes(Convert.ToInt32(applicationIdRaw)))
-                    .Reverse());
-            var userVersion = string.Join(".", BitConverter.GetBytes(Convert.ToInt32(userVersionRaw)).Reverse());
+            var applicationIdInt = Convert.ToInt32(applicationIdRaw);
+            var applicationIdBytes = BitConverter.GetBytes(applicationIdInt);
+            var applicationIdString = Encoding.UTF8.GetString(applicationIdBytes).Reverse();
+            var applicationId = string.Join("", applicationIdString);
 
+            var userVersionInt = Convert.ToInt32(userVersionRaw);
+            var userVersionBytes = BitConverter.GetBytes(userVersionInt);
+            var userVersionNumbers = userVersionBytes.Reverse();
+            var userVersion = string.Join(".", userVersionNumbers);
 
             return new Dictionary<string, string> {{"applicationId", applicationId}, {"userVersion", userVersion},};
         }
@@ -104,7 +109,7 @@
         /// 
         /// </summary>
         /// <remarks>
-        /// Implemented from reverse engineering and adapted from the code at
+        /// Implemented from reverse engineering and learning from code at
         /// https://github.com/audacity/audacity/blob/2c47dc5ba1a91c87a457ffba6caf8b1baf706279/src/ProjectFileIO.cpp
         /// and
         /// https://github.com/audacity/audacity/blob/2c47dc5ba1a91c87a457ffba6caf8b1baf706279/src/ProjectSerializer.cpp
@@ -112,6 +117,7 @@
         /// <returns></returns>
         private Project GetProject(IFileInfo fileInfo)
         {
+            var culture = CultureInfo.InvariantCulture;
             using var scope = logger.BeginScope("Processing Audacity 3 project file {path}", fileInfo.Name);
             Project project = null;
             ExecuteReader(fileInfo, "SELECT dict, doc FROM project WHERE id = 1;", action: (conn, comm, reader) =>
@@ -123,13 +129,16 @@
                         throw new InvalidOperationException("Audacity 3 project has already been loaded.");
                     }
 
+                    // read the dict and doc from the sqlite file
                     var bufferDict = (byte[])reader.GetValue(0);
                     var bufferDoc = (byte[])reader.GetValue(1);
                     var buffer = bufferDict.Concat(bufferDoc).ToArray();
 
+                    // create a memory stream and binary reader as each have benefits when reading the buffer
                     using var inStream = new MemoryStream(buffer);
                     using var inBinary = new BinaryReader(inStream);
 
+                    // create the xml stream to write to
                     using var contentWriter = new StringWriter();
                     var settings = new XmlWriterSettings
                     {
@@ -137,18 +146,24 @@
                     };
                     using var contentXml = XmlWriter.Create(contentWriter, settings);
 
+                    // implement the "stack of dictionaries" used in the custom XML serialization
                     var currentIds = new Dictionary<ushort, string>();
                     var allIds = new Stack<Dictionary<ushort, string>>();
-                    
+
+                    // need an initial encoding
                     Encoding encoding = Encoding.Default;
+
+                    // read the first value, which is a value indicating the type of data stored in the current 'block'
                     int currentValue = inBinary.Read();
+
+                    // read the data in a loop - first the dict of xml keys and values, then the xml doc
                     while (currentValue > -1)
                     {
                         ushort id;
                         int count;
                         string name;
                         string text;
-                        
+
                         switch (currentValue)
                         {
                             case (int)FieldTypes.Push:
@@ -156,12 +171,12 @@
                                 currentIds = new Dictionary<ushort, string>();
                                 logger.LogTrace("Pushed new id dictionary on to stack.");
                                 break;
-                            
+
                             case (int)FieldTypes.Pop:
                                 currentIds = allIds.Pop();
                                 logger.LogTrace("Popped id dictionary from stack.");
                                 break;
-                            
+
                             case (int)FieldTypes.Name:
                                 id = inBinary.ReadUInt16();
                                 count = inBinary.ReadUInt16();
@@ -198,7 +213,7 @@
                                 var floatValue = inBinary.ReadSingle();
                                 var floatDigits = inBinary.ReadInt32();
                                 name = GetName(currentIds, id);
-                                contentXml.WriteAttributeString(name, floatValue.ToString(CultureInfo.InvariantCulture));
+                                contentXml.WriteAttributeString(name, floatValue.ToString(culture));
                                 logger.LogTrace($"Wrote attribute float {name}={floatValue}.");
                                 break;
 
@@ -207,8 +222,7 @@
                                 var doubleValue = inBinary.ReadDouble();
                                 var doubleDigits = inBinary.ReadInt32();
                                 name = GetName(currentIds, id);
-                                contentXml.WriteAttributeString(name,
-                                    doubleValue.ToString(CultureInfo.InvariantCulture));
+                                contentXml.WriteAttributeString(name, doubleValue.ToString(culture));
                                 logger.LogTrace($"Wrote attribute double {name}={doubleValue}.");
                                 break;
 
@@ -216,7 +230,7 @@
                                 id = inBinary.ReadUInt16();
                                 var intValue = inBinary.ReadUInt32();
                                 name = GetName(currentIds, id);
-                                contentXml.WriteAttributeString(name, intValue.ToString(CultureInfo.InvariantCulture));
+                                contentXml.WriteAttributeString(name, intValue.ToString(culture));
                                 logger.LogTrace($"Wrote attribute int {name}={intValue}.");
                                 break;
 
@@ -224,7 +238,7 @@
                                 id = inBinary.ReadUInt16();
                                 var boolValue = inBinary.ReadBoolean();
                                 name = GetName(currentIds, id);
-                                contentXml.WriteAttributeString(name, boolValue ? "1": "0");
+                                contentXml.WriteAttributeString(name, boolValue ? "1" : "0");
                                 logger.LogTrace($"Wrote attribute bool {name}={boolValue}.");
                                 break;
 
@@ -232,7 +246,7 @@
                                 id = inBinary.ReadUInt16();
                                 var longValue = inBinary.ReadInt32();
                                 name = GetName(currentIds, id);
-                                contentXml.WriteAttributeString(name, longValue.ToString(CultureInfo.InvariantCulture));
+                                contentXml.WriteAttributeString(name, longValue.ToString(culture));
                                 logger.LogTrace($"Wrote attribute long {name}={longValue}.");
                                 break;
 
@@ -242,8 +256,7 @@
                                 // https://www.tangiblesoftwaresolutions.com/articles/csharp_equivalent_to_cplus_types.html
                                 var longLongValue = inBinary.ReadInt64();
                                 name = GetName(currentIds, id);
-                                contentXml.WriteAttributeString(name,
-                                    longLongValue.ToString(CultureInfo.InvariantCulture));
+                                contentXml.WriteAttributeString(name, longLongValue.ToString(culture));
                                 logger.LogTrace($"Wrote attribute long long {name}={longLongValue}.");
                                 break;
 
@@ -251,7 +264,7 @@
                                 id = inBinary.ReadUInt16();
                                 var ulongValue = inBinary.ReadUInt32();
                                 name = GetName(currentIds, id);
-                                contentXml.WriteAttributeString(name, ulongValue.ToString(CultureInfo.InvariantCulture));
+                                contentXml.WriteAttributeString(name, ulongValue.ToString(culture));
                                 logger.LogTrace($"Wrote attribute sizet {name}={ulongValue}.");
                                 break;
 
@@ -270,27 +283,36 @@
                                 break;
 
                             case (int)FieldTypes.CharSize:
-                                encoding = inStream.ReadByte() switch
+                                int readByte = inStream.ReadByte();
+                                encoding = readByte switch
                                 {
                                     1 => Encoding.UTF8,
                                     2 => Encoding.Unicode,
                                     4 => Encoding.UTF32,
-                                    _ => throw new InvalidOperationException()
+                                    _ => throw new InvalidOperationException(
+                                        $"Invalid encoding identifier '{readByte}'.")
                                 };
 
                                 logger.LogTrace($"Set encoding '{encoding}'.");
                                 break;
 
                             default:
-                                logger.LogError($"Unknown field type id {currentValue}.");
-                                break;
+                                var msg = $"Unknown field type id {currentValue}.";
+                                logger.LogError(msg);
+                                throw new InvalidOperationException(msg);
                         }
 
+                        // read the value indicating the next type of data
                         currentValue = inBinary.Read();
                     }
+
+                    // ensure all xml content has been written
                     contentXml.Flush();
+
+                    // get the xml as a string
                     var content = contentWriter.ToString();
-                    
+
+                    // write the content to a stream writer that can be used by the audacity serializer
                     using var outStream = new MemoryStream();
                     using var outWriter = new StreamWriter(outStream);
                     outWriter.Write(content);

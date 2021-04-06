@@ -14,7 +14,7 @@
     {
         private readonly ILogger<AudacitySerializer> logger;
         private readonly DefaultXmlSerializer serializer;
-        
+
         public static string XmlDtd = "http://audacity.sourceforge.net/xml/audacityproject-1.3.0.dtd";
         public static string XmlName = "project";
         public static string XmlNs = "http://audacity.sourceforge.net/xml/";
@@ -54,6 +54,9 @@
         {
             serializer.Serialize(path, project, XmlNs,
                 XmlName, XmlPubId, XmlDtd);
+            
+            // create an empty folder so Audacity can open the .aup file
+            Directory.CreateDirectory(Path.Combine(Path.GetDirectoryName(path), project.ProjectName));
         }
 
         private void LogDeserializerIssue(object sender, EventArgs args, string path)
@@ -62,17 +65,17 @@
             {
                 case XmlAttributeEventArgs a:
                     logger.LogWarning(
-                        $"Found an unknown XML attribute '{a.Attr.Name}' " +
+                        $"Sender '{sender}' found an unknown XML attribute '{a.Attr.Name}' " +
                         $"in '{path}' at '{a.LineNumber}:{a.LinePosition}'.");
                     break;
                 case XmlElementEventArgs a:
                     logger.LogWarning(
-                        $"Found an unknown XML element '{a.Element.Name}' " +
+                        $"Sender '{sender}' found an unknown XML element '{a.Element.Name}' " +
                         $"in '{path}' at '{a.LineNumber}:{a.LinePosition}'.");
                     break;
                 case XmlNodeEventArgs a:
                     logger.LogWarning(
-                        $"Found an unknown XML node '{a.Name}' " +
+                        $"Sender '{sender}' found an unknown XML node '{a.Name}' " +
                         $"in '{path}' at '{a.LineNumber}:{a.LinePosition}'.");
                     break;
                 case UnreferencedObjectEventArgs a:

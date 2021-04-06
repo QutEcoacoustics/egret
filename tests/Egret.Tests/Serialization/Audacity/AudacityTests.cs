@@ -67,10 +67,8 @@
         [Fact]
         public async Task TestConfigDeserializer()
         {
-            TestFiles.AddFile("/abc/bird1.wav", "");
-            TestFiles.AddFile("/abc/bird2.wav", "");
-            TestFiles.AddFile("/def/bird3.wav", "");
-            TestFiles.AddFile("/def/bird4.wav", "");
+            TestFiles.AddFile("/abc/example1.wav", "");
+            
             TestFiles.AddFile(AudacityExamples.HostConfig);
             TestFiles.AddFile(AudacityExamples.GuestConfig);
 

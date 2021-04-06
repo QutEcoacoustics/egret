@@ -91,7 +91,6 @@ namespace Egret.Cli.Hosting
 
             services.AddSingleton<SharedImporter>();
             services.AddSingleton<AvianzImporter>();
-            services.AddSingleton<Audacity3Importer>();
             services.AddSingleton<AudacityImporter>();
             services.AddSingleton<EgretImporter>();
             services.AddSingleton((provider) => new ITestCaseImporter[] {
@@ -99,7 +98,6 @@ namespace Egret.Cli.Hosting
                 provider.GetRequiredService<AvianzImporter>(),
                 provider.GetRequiredService<EgretImporter>(),
                 provider.GetRequiredService<AudacityImporter>(),
-                provider.GetRequiredService<Audacity3Importer>(),
             });
             services.AddSingleton<TestCaseImporter>();
         }

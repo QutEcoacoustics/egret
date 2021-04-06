@@ -9,14 +9,13 @@
 
     public static class AudacityExamples
     {
-        public const string Example1File = @"Serialization\Audacity\Examples\audacity-example1.aup";
-        public const string Example2File = @"Serialization\Audacity\Examples\audacity-example2.aup3";
+        public const string Example1File = @"..\..\..\..\Fixtures\Audacity\audacity-example1.aup";
+        public const string Example2File = @"..\..\..\..\Fixtures\Audacity\audacity-example2.aup3";
+        public const string Example2V2File = @"..\..\..\..\Fixtures\Audacity\audacity-example2.aup";
 
         public static readonly TestFile HostConfig = ("/abc/host.egret.yaml", @"
 test_suites:
   host_suite:
-    tests:
-      - file: bird*.wav
     include_tests:
       - from: /abc/example1.aup
 ");
@@ -26,13 +25,11 @@ test_suites:
         public static readonly TestFile Host3Config = ("/abc/host.egret.yaml", @"
 test_suites:
   host_suite:
-    tests:
-      - file: bird*.wav
     include_tests:
       - from: /abc/example2.aup3
 ");
 
-        // Note that this file is not actually used by the Audacity3Importer / Audacity3Serializer,
+        // Note that this file is not actually used by the Audacity3Serializer,
         // as SqliteConnection doesn't seem to be able to use the mock file system. 
         // This is here to ensure that the file exists in the mock filesystem.
         // NOTE: the file contains placeholder data on purpose
@@ -107,7 +104,7 @@ test_suites:
                         Height = 90,
                         Minimized = 0,
                         NumLabels = 1,
-                        Labels = new Label[]
+                        Labels = new[]
                             {
                                 new Label {TimeStart = 8.0228571429, TimeEnd = 18.9800000000, Title = "test 2"},
                             }
@@ -180,14 +177,18 @@ test_suites:
 
         public static string BuildFullPath(string relativePath)
         {
-            return Path.Combine(Directory.GetCurrentDirectory(), relativePath.TrimStart(Path.PathSeparator));
+            var basePath = Directory.GetCurrentDirectory();
+            var relativePathNormalised = relativePath.TrimStart(Path.PathSeparator);
+            return Path.GetFullPath(relativePathNormalised, basePath);
         }
 
         public static void Compare(Project actual, Project expected)
         {
-            // TODO
-            // projectActual.Should().BeEquivalentTo(projectExpected, 
-            //     options => options.Excluding(p => p.SourceInfo).Excluding(p => p.Tags).Excluding(p => p.Tracks));
+            // TODO: compare projects
+            // actual.Should().BeEquivalentTo(expected,
+            //     options => options
+            //         .Excluding(p => p.Tags)
+            //         .Excluding(p => p.Tracks));
 
             actual.Tags.Should()
                 .BeEquivalentTo(expected.Tags, options => options.ComparingByMembers<Tag>());

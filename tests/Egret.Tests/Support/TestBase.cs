@@ -53,10 +53,9 @@ namespace Egret.Tests.Support
             var egret = new EgretImporter(BuildLogger<EgretImporter>(), TestFiles);
             var shared = new SharedImporter(BuildLogger<SharedImporter>(), Helpers.DefaultNamingConvention);
             var avianz = new AvianzImporter(BuildLogger<AvianzImporter>(), TestFiles, AvianzDeserializer, Helpers.DefaultAppSettings);
-            var audacity = new AudacityImporter(BuildLogger<AudacityImporter>(), TestFiles, AudacitySerializer, Helpers.DefaultAppSettings);
-            var audacity3 = new Audacity3Importer(BuildLogger<Audacity3Importer>(), TestFiles, Audacity3Serializer, Helpers.DefaultAppSettings);
+            var audacity = new AudacityImporter(BuildLogger<AudacityImporter>(), TestFiles, AudacitySerializer, Audacity3Serializer, Helpers.DefaultAppSettings);
             var importer = new TestCaseImporter(BuildLogger<TestCaseImporter>(), new ITestCaseImporter[] {
-                egret, shared, avianz, audacity, audacity3
+                egret, shared, avianz, audacity
             });
             return new ConfigDeserializer(
                BuildLogger<ConfigDeserializer>(),

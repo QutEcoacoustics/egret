@@ -22,13 +22,13 @@
 
         /// <summary>
         /// Is this label for a point in time?
-        /// If false, this label covers a time span greater than 0.01.
+        /// If false, this label covers a time span equal to or greater than 0.01.
         /// </summary>
         public bool IsTimePoint => Math.Abs(this.TimeStart - this.TimeEnd) < 0.01;
 
         /// <summary>
         /// Is this label for a frequency point?
-        /// If false, this label covers a frequency range greater than 0.01.
+        /// If false, this label covers a frequency range equal to or greater than 0.01.
         /// </summary>
         public bool IsSelPoint => Math.Abs(this.SelLow - this.SelHigh) < 0.01;
 

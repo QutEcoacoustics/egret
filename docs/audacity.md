@@ -62,10 +62,19 @@ The directory contains the audio imported into Audacity. You may want to keep th
 Make sure you keep the original audio file you imported into Audacity.
 Egret requires this original audio file to run the analysis tools and get results.
 
+The Audacity project file and the audio file must have the same name, and be in the same folder.
+
+The original audio file is found by Egret by finding a file that has the same file "stem" as the Audacity project file.
+The "stem" is the filename before to the last dot `.` (the extension, e.g. `.wav`).
+Egret finds the original audio file by removing the file extension and comparing the "stem" of the audio file and the Audacity project file.
+
+For example, the Audacity project file `/123/abc.aup` or `/123/abc.aup3` might have an original audio file
+at the path `/123/abc.wav` or `/123/abc.mp3`.
+
 
 ## <a id="usageReviewResults"></a> Usage for reviewing results
 
-When running Egret, there is an option to save the results as Audacity Project files using `--audacity`.
+When running Egret, there is an option to save the results as Audacity Project files using the `--audacity` command line argument.
 
 This will create one Audacity Project file for each combination of test suite, tool, and audio file.
 For example, if you have one test suite with two audio files, and two tools, 
@@ -89,17 +98,18 @@ It should be possible to open two or more Audacity Project files at the same tim
 As you review the results, you can use any insights to make changes in the other Audacity window that contains the test expectations.
 
 
-## QUESTION
+## Frequently Asked Questions
 
-Change to using audacity files as expectations, without specifying the file to test?
+### Why can't Egret read the audio files saved as part of the Audacity Project file?
 
-An audacity project file may reference audio files, but the files seem to always be in Sun AU format, and are split into smaller files.
+An Audacity project file may include zero, one, or more audio files.
+However, the files are stored in Sun AU format, split into smaller files.
 
-The goal is to be able to load expectations and save results to easily view labels against arbitrary audio files
+The goal is to be able to load expectations and save results to easily view labels against audio files.
+It is tricky to run tools and match test expectations when the original audio is spilt into parts, 
+and in a format that some tools have trouble reading.
 
-When loading, could be able to use the audio tracks, and/or specify other audio files to test
+Egret is a tool runner, and does not try to convert or combine the audio files.
 
-When saving, it likely does not make sense to try to build the audacity project audio file structure (need to process and split files),
-as Egret will need to be able to process audio if saving audio in the Audacity format.
-
-Maybe use the project tags to reference one file per .aup output file?
+Instead, there is the convention that one Audacity project file (`.aup` or `.aup3`) references one original audio file.
+The Audacity project file and the audio file must have the same name, and be in the same folder.

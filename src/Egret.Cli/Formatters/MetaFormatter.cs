@@ -37,7 +37,7 @@ namespace Egret.Cli.Formatters
                 formatters.Add(provider.GetRequiredService<HtmlResultFormatter>());
             }
 
-            if (logger.PassThrough(options.Csv, "Using HTML result formatter: {yesNo}", LogLevel.Debug))
+            if (logger.PassThrough(options.Csv, "Using CSV result formatter: {yesNo}", LogLevel.Debug))
             {
                 formatters.Add(provider.GetRequiredService<CsvResultFormatter>());
             }

@@ -47,10 +47,9 @@
         [FileData(AudacityExamples.Example2File)]
         public async Task TestConfigDeserializer(string filePath)
         {
-            TestFiles.AddFile("/abc/bird1.wav", "");
-            TestFiles.AddFile("/abc/bird2.wav", "");
-            TestFiles.AddFile("/def/bird3.wav", "");
-            TestFiles.AddFile("/def/bird4.wav", "");
+            var resolvedPath = Path.GetFullPath(filePath);
+            var audioPath = Path.ChangeExtension(filePath, ".wav");
+            TestFiles.AddFile(audioPath, "");
 
             // There are two file systems being used here,
             // because SqliteConnection doesn't seem to be able to use the mock file system.
@@ -60,11 +59,11 @@
             // and the real file exists and the mock file exists with placeholder content (which is not read). 
             var placeholderPath = "/abc/example2.aup3";
             var hostConfig = AudacityExamples.Host3Config;
-            var newHostConfig = (hostConfig.Path, hostConfig.Contents.Replace(placeholderPath, filePath));
+            var newHostConfig = (hostConfig.Path, hostConfig.Contents.Replace(placeholderPath, resolvedPath));
             TestFiles.AddFile(newHostConfig);
 
             var guestConfig = AudacityExamples.Guest3Config;
-            var newGuestConfig = (filePath, guestConfig.Contents);
+            var newGuestConfig = (resolvedPath, guestConfig.Contents);
             TestFiles.AddFile(newGuestConfig);
 
             (Config config, Seq<Error> errors) = await this.configDeserializer.Deserialize(
@@ -80,7 +79,7 @@
             testSuit.IncludeTests.ToList().Should().HaveCount(1);
 
             var includeTests = testSuit.IncludeTests[0];
-            includeTests.From.Should().Be(filePath);
+            includeTests.From.Should().Be(resolvedPath);
 
             var testsCases = includeTests.Tests;
             testsCases.ToList().Should().HaveCount(1);
@@ -95,7 +94,7 @@
             var spectralTolerance = includeTests.SpectralTolerance ?? 0.5;
 
             var expected = AudacityExamples.Example2Instance();
-            
+
             var expectation1 = (BoundedExpectation)expectations[0];
             expectation1.Name.Should().Be($"Audacity Label label 3 in track Label Track (0:0)");
             var expected1Label = expected.Tracks[0].Labels[0];
