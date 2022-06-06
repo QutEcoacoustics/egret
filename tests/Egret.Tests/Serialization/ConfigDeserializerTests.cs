@@ -2,6 +2,7 @@ namespace Egret.Tests.Serialization
 {
     using FluentAssertions;
     using global::Egret.Cli.Models;
+    using global::Egret.Cli.Models.Expectations;
     using global::Egret.Cli.Serialization;
     using global::Egret.Tests.Support;
     using LanguageExt;
@@ -99,15 +100,15 @@ test_suites:
             var tests = config.TestSuites["host_suite"].Tests.AsEnumerable();
             var expectedSource = new SourceInfo(ResolvePath(HostConfig.Path), 5, 9, 6, 5);
             tests.Should().BeEquivalentTo(new[]{
-                new TestCase(){ Name = "#1", File = ResolvePath("/abc/bird1.wav"), SourceInfo = expectedSource },
-                new TestCase(){ Name = "#2", File = ResolvePath("/abc/bird2.wav"), SourceInfo = expectedSource }
+                new TestCase(){ Name = "#1", File = ResolvePath("/abc/bird1.wav"), SourceInfo = expectedSource, Expect =  Arr.create<IExpectation>(new NoExtraResultsExpectation()) },
+                new TestCase(){ Name = "#2", File = ResolvePath("/abc/bird2.wav"), SourceInfo = expectedSource,  Expect = Arr.create<IExpectation>(new NoExtraResultsExpectation()) }
             });
 
             var includeTests = config.TestSuites["host_suite"].IncludeTests.SelectMany(x => x.Tests);
             var expectedIncludeSource = new SourceInfo(ResolvePath(GuestConfig.Path), 5, 9, 6, 1);
             includeTests.Should().BeEquivalentTo(new[]{
-                new TestCase(){ Name = "#1", File = ResolvePath("/def/bird3.wav"), SourceInfo = expectedIncludeSource },
-                new TestCase(){ Name = "#2", File = ResolvePath("/def/bird4.wav"), SourceInfo = expectedIncludeSource }
+                new TestCase(){ Name = "#1", File = ResolvePath("/def/bird3.wav"), SourceInfo = expectedIncludeSource,  Expect = Arr.create<IExpectation>(new NoExtraResultsExpectation()) },
+                new TestCase(){ Name = "#2", File = ResolvePath("/def/bird4.wav"), SourceInfo = expectedIncludeSource, Expect = Arr.create<IExpectation>(new NoExtraResultsExpectation()) }
             });
 
         }

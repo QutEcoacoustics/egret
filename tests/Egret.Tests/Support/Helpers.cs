@@ -2,6 +2,7 @@ using Divergic.Logging.Xunit;
 using Egret.Cli;
 using FluentAssertions;
 using FluentAssertions.Equivalency;
+using FluentAssertions.Equivalency.Steps;
 using LanguageExt;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -31,27 +32,6 @@ namespace Egret.Tests.Support
         public static void AddFile(this MockFileSystem fileSystem, TestFile file)
         {
             fileSystem.AddFile(file.Path, file.Contents);
-        }
-
-        public static void BeEquivalentTo_Record<TExpectation>(
-            this FluentAssertions.Primitives.ObjectAssertions host,
-            TExpectation target,
-            Func<EquivalencyAssertionOptions<TExpectation>, EquivalencyAssertionOptions<TExpectation>> config = default,
-            string because = "",
-            params object[] becauseArgs)
-        {
-            host.BeEquivalentTo(target, config.Compose(x => x.Using(new RecordStructuralEqualityEquivalencyStep())), because, becauseArgs);
-        }
-
-        // HACK: https://stackoverflow.com/a/64307613/224512
-        public static bool IsRecord(this Type type) => type.GetMethod("<Clone>$") != null;
-    }
-
-    public class RecordStructuralEqualityEquivalencyStep : StructuralEqualityEquivalencyStep
-    {
-        public new bool CanHandle(IEquivalencyValidationContext context, IEquivalencyAssertionOptions config)
-        {
-            return context.CompileTimeType.IsRecord();
         }
     }
 }
