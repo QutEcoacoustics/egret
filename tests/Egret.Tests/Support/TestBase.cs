@@ -14,6 +14,8 @@ using System.IO.Abstractions.TestingHelpers;
 using Xunit.Abstractions;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
+using Egret.Cli.Serialization.Audacity;
+using Egret.Cli.Serialization.Xml;
 
 namespace Egret.Tests.Support
 {
@@ -43,13 +45,17 @@ namespace Egret.Tests.Support
 
         protected AvianzDeserializer AvianzDeserializer => new(new DefaultJsonSerializer());
 
+        protected AudacitySerializer AudacitySerializer => new(BuildLogger<AudacitySerializer>(), new DefaultXmlSerializer());
+        protected Audacity3Serializer Audacity3Serializer => new(BuildLogger<Audacity3Serializer>(), AudacitySerializer);
+
         protected ConfigDeserializer BuildConfigDeserializer()
         {
             var egret = new EgretImporter(BuildLogger<EgretImporter>(), TestFiles);
             var shared = new SharedImporter(BuildLogger<SharedImporter>(), Helpers.DefaultNamingConvention);
             var avianz = new AvianzImporter(BuildLogger<AvianzImporter>(), TestFiles, AvianzDeserializer, Helpers.DefaultAppSettings);
+            var audacity = new AudacityImporter(BuildLogger<AudacityImporter>(), TestFiles, AudacitySerializer, Audacity3Serializer, Helpers.DefaultAppSettings);
             var importer = new TestCaseImporter(BuildLogger<TestCaseImporter>(), new ITestCaseImporter[] {
-                egret, shared, avianz
+                egret, shared, avianz, audacity
             });
             return new ConfigDeserializer(
                BuildLogger<ConfigDeserializer>(),

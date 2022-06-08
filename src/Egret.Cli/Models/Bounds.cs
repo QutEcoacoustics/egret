@@ -8,8 +8,8 @@ namespace Egret.Cli.Models
 {
     /// <summary>
     /// Represents a rectangular event.
-    // Coordinates are encoded as four intervals to allow fuzzy matching.
-    /// <summary>
+    /// Coordinates are encoded as four intervals to allow fuzzy matching.
+    /// </summary>
     public struct Bounds : IYamlConvertible
     {
         public Bounds(Interval startSeconds, Interval endSeconds, Interval lowHertz, Interval highHertz)

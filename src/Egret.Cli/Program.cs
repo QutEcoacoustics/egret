@@ -51,6 +51,7 @@ namespace Egret.Cli
                     new Option<bool>("--csv", description: "Output results to a CSV file").WithAlias("-c"),
                     new Option<bool>("--no-console", description: "Do not output results in the console").WithAlias("-q"),
                     new Option<bool>("--html", description: "Output results to a HTML file").WithAlias("-h"),
+                    new Option<bool>("--audacity", description: "Output results to Audacity project files").WithAlias("-a"),
                     new Option<bool>("--sequential", description: "Disable parallel execution").WithAlias("-s"),
                 },
                 new Command("watch", "Runs egret tests every time a change is found")
